@@ -278,6 +278,7 @@ const SECTORES = {
   B: { nombre: 'Sector B', zona: '2do piso (azul)', precio: 80 },
   C: { nombre: 'Sector C', zona: 'Superior (verde)', precio: 70 }
 };
+const CANALES = { virtual: 'Venta virtual', fisica: 'Venta física' };
 const TIPOS = { general: 'General', cortesia: 'Cortesía', especial: 'Precio especial' };
 const MEDIOS = ['Efectivo', 'Yape', 'Plin', 'Transferencia', 'Tarjeta (POS)', 'Otro'];
 const MODALIDADES = ['Entrega física', 'Envío digital (WhatsApp o correo)', 'Recojo en boletería'];
@@ -499,23 +500,25 @@ function estadisticas() {
       else { o.vendidas++; o.cobrado += precioDe(e.venta, a.id); }
     }
   }
-  const vend = {}, medio = {}, canal = { app: 0, presencial: 0 };
+  const medio = {}, cuenta = {}, canal = { virtual: 0, fisica: 0 };
   let entOk = 0, entPend = 0;
   for (const v of Object.values(S.ventas)) {
     if (v.estado !== 'activa') continue;
     const n = asientosDe(v).length, pend = v.tipo !== 'cortesia' && v.pago && v.pago.estado === 'pendiente';
-    const kv = v.vendedor || 'Sin registrar';
-    if (!vend[kv]) vend[kv] = { ventas: 0, entradas: 0, cobrado: 0, porCobrar: 0 };
-    vend[kv].ventas++; vend[kv].entradas += n; vend[kv][pend ? 'porCobrar' : 'cobrado'] += Number(v.total) || 0;
     if (v.tipo !== 'cortesia') {
       const km = (v.pago && v.pago.medio) || 'Sin registrar';
       if (!medio[km]) medio[km] = { entradas: 0, cobrado: 0, porCobrar: 0 };
       medio[km].entradas += n; medio[km][pend ? 'porCobrar' : 'cobrado'] += Number(v.total) || 0;
+      if (!pend) {
+        const kc = (v.pago && v.pago.cuenta) || 'Sin indicar';
+        if (!cuenta[kc]) cuenta[kc] = { entradas: 0, cobrado: 0 };
+        cuenta[kc].entradas += n; cuenta[kc].cobrado += Number(v.total) || 0;
+      }
     }
     if (v.entrega && v.entrega.hecha) entOk += n; else entPend += n;
-    canal[v.canal === 'presencial' ? 'presencial' : 'app'] += n;
+    canal[v.canal === 'fisica' ? 'fisica' : 'virtual'] += n;
   }
-  return { sec, tot, vend, medio, canal, entOk, entPend };
+  return { sec, tot, medio, cuenta, canal, entOk, entPend };
 }
 
 /* =====================================================================
@@ -541,12 +544,12 @@ async function crearVenta(d) {
     const { precios, total } = calcularPrecios(ids, d.tipo, d.precioEsp);
     const cort = d.tipo === 'cortesia';
     const venta = {
-      num, codigo: 'V-' + String(num).padStart(4, '0'), estado: 'activa', canal: deCupo ? 'presencial' : 'app', bloqueo: deCupo ? (d.bloqueo || '') : '',
+      num, codigo: 'V-' + String(num).padStart(4, '0'), estado: 'activa', canal: d.canal === 'fisica' || d.canal === 'virtual' ? d.canal : (deCupo ? 'fisica' : 'virtual'), bloqueo: deCupo ? (d.bloqueo || '') : '',
       tipo: d.tipo, asientos: ids, precios, total,
       comprador: { nombre: d.nombre, doc: d.doc || '', tel: d.tel || '' },
-      pago: cort ? { medio: 'No aplica', estado: 'pagado', nroOp: '', fecha: null }
-                 : { medio: d.medio, estado: d.pagoEstado, nroOp: d.nroOp || '', fecha: d.pagoEstado === 'pagado' ? (d.pagoFecha === undefined ? ahora : d.pagoFecha) : null },
-      entrega: { modalidad: d.modalidad, hecha: !!d.entregada, fecha: d.entregada ? ahora : null, por: d.entregada ? U.nombre : '' },
+      pago: cort ? { medio: 'No aplica', estado: 'pagado', cuenta: '', fecha: null }
+                 : { medio: d.medio, estado: d.pagoEstado, cuenta: d.cuenta || '', fecha: d.pagoEstado === 'pagado' ? (d.pagoFecha === undefined ? ahora : d.pagoFecha) : null },
+      entrega: { modalidad: d.modalidad, responsable: d.responsable || '', hecha: !!d.entregada, fecha: d.entregada ? ahora : null },
       vendedor: d.vendedor || U.nombre, registradoPor: { uid: U.uid, nombre: U.nombre },
       obs: d.obs || '', creado: ahora, modificado: ahora
     };
@@ -562,8 +565,9 @@ async function crearVenta(d) {
 const CAMPOS = [
   ['comprador.nombre', 'Comprador'], ['comprador.doc', 'DNI'], ['comprador.tel', 'Teléfono'],
   ['tipo', 'Tipo de entrada', v => TIPOS[v] || v], ['total', 'Total', sol],
-  ['pago.medio', 'Medio de pago'], ['pago.estado', 'Pago', v => v === 'pendiente' ? 'Pendiente' : 'Pagado'], ['pago.nroOp', 'N.º de operación'],
-  ['entrega.modalidad', 'Modalidad de entrega'], ['entrega.hecha', 'Entrega', v => v ? 'Realizada' : 'Pendiente'],
+  ['pago.medio', 'Medio de pago'], ['pago.estado', 'Pago', v => v === 'pendiente' ? 'Pendiente' : 'Pagado'], ['pago.cuenta', 'Cuenta de destino'],
+  ['entrega.modalidad', 'Modalidad de entrega'], ['entrega.responsable', 'Responsable de entrega'], ['entrega.hecha', 'Entrega', v => v ? 'Realizada' : 'Pendiente'],
+  ['canal', 'Canal', v => CANALES[v] || v],
   ['vendedor', 'Vendedor'], ['obs', 'Observaciones']
 ];
 async function guardarVenta(id, nueva, accion) {
@@ -577,8 +581,8 @@ async function guardarVenta(id, nueva, accion) {
   const ahora = Date.now();
   if (nueva.pago.estado === 'pagado' && antes.pago && antes.pago.estado === 'pendiente') nueva.pago.fecha = ahora;
   if (nueva.pago.estado === 'pendiente') nueva.pago.fecha = null;
-  if (nueva.entrega.hecha && !(antes.entrega && antes.entrega.hecha)) { nueva.entrega.fecha = ahora; nueva.entrega.por = U.nombre; }
-  if (!nueva.entrega.hecha) { nueva.entrega.fecha = null; nueva.entrega.por = ''; }
+  if (nueva.entrega.hecha && !(antes.entrega && antes.entrega.hecha)) nueva.entrega.fecha = ahora;
+  if (!nueva.entrega.hecha) nueva.entrega.fecha = null;
   nueva.modificado = ahora;
   const [hk, hv] = linea(accion || 'Venta modificada', { venta: id, codigo: nueva.codigo, cambios });
   await almacen.actualizar({ ['ventas/' + id]: nueva, [hk]: hv });
@@ -826,14 +830,14 @@ function pintarSeleccion() {
   bar.innerHTML = `<div class="selbar-in"><div class="txt">${txt}</div><div class="acc">${acc}</div></div>`;
 }
 
-const FILTROS = [['activas', 'Todas'], ['pago', 'Pago pendiente'], ['entrega', 'Entrega pendiente'], ['cortesia', 'Cortesías'], ['presencial', 'De bloqueo'], ['anuladas', 'Anuladas']];
+const FILTROS = [['activas', 'Todas'], ['pago', 'Pago pendiente'], ['entrega', 'Entrega pendiente'], ['cortesia', 'Cortesías'], ['virtual', 'Venta virtual'], ['fisica', 'Venta física'], ['anuladas', 'Anuladas']];
 function etiquetas(v) {
   if (v.estado === 'anulada') return '<span class="et mal">Anulada</span>';
   let h = '';
   if (v.tipo === 'cortesia') h += '<span class="et cort">Cortesía</span>';
   else h += v.pago && v.pago.estado === 'pendiente' ? '<span class="et pend">Pago pendiente</span>' : '<span class="et ok">Pagada</span>';
   h += v.entrega && v.entrega.hecha ? '<span class="et ok">Entregada</span>' : '<span class="et pend">Entrega pendiente</span>';
-  if (v.canal === 'presencial') h += '<span class="et cupo">De bloqueo</span>';
+  h += '<span class="et cupo">' + (v.canal === 'fisica' ? 'Física' : 'Virtual') + '</span>';
   return h;
 }
 function pintarVentas() {
@@ -845,7 +849,7 @@ function pintarVentas() {
     if (UI.filtro === 'pago' && !(v.tipo !== 'cortesia' && v.pago && v.pago.estado === 'pendiente')) return false;
     if (UI.filtro === 'entrega' && v.entrega && v.entrega.hecha) return false;
     if (UI.filtro === 'cortesia' && v.tipo !== 'cortesia') return false;
-    if (UI.filtro === 'presencial' && v.canal !== 'presencial') return false;
+    if ((UI.filtro === 'virtual' || UI.filtro === 'fisica') && (v.canal === 'fisica' ? 'fisica' : 'virtual') !== UI.filtro) return false;
     if (!q) return true;
     const c = v.comprador || {};
     return [v.codigo, c.nombre, c.doc, c.tel, v.vendedor, asientosDe(v).join(' '), resumenAsientos(asientosDe(v))].join(' ').toLowerCase().includes(q);
@@ -881,14 +885,14 @@ function pintarResumen(st) {
     <tbody>${['A', 'B', 'C'].map(k => filaSec(SECTORES[k].nombre + ' (' + sol(SECTORES[k].precio) + ')', st.sec[k])).join('')}</tbody>
     <tfoot>${filaSec('Total', t)}</tfoot></table></div>
   </div>
-  <div class="caja"><h2>Por vendedor</h2>${tabla(st.vend, ['Vendedor', 'Ventas', 'Entradas', 'Cobrado', 'Por cobrar'], (k, o) => `<tr><td>${esc(k)}</td><td>${o.ventas}</td><td>${o.entradas}</td><td>${sol(o.cobrado)}</td><td>${sol(o.porCobrar)}</td></tr>`)}</div>
   <div class="caja"><h2>Por medio de pago</h2>${tabla(st.medio, ['Medio', 'Entradas', 'Cobrado', 'Por cobrar'], (k, o) => `<tr><td>${esc(k)}</td><td>${o.entradas}</td><td>${sol(o.cobrado)}</td><td>${sol(o.porCobrar)}</td></tr>`)}</div>
+  <div class="caja"><h2>Por cuenta de destino</h2>${tabla(st.cuenta, ['Cuenta que recibió el pago', 'Entradas', 'Cobrado'], (k, o) => `<tr><td>${esc(k)}</td><td>${o.entradas}</td><td>${sol(o.cobrado)}</td></tr>`)}</div>
   <div class="caja"><h2>Entrega y canal</h2>
     <div class="cifras">
       <div><strong>${st.entOk}</strong>entradas entregadas</div>
       <div><strong>${st.entPend}</strong>por entregar</div>
-      <div><strong>${st.canal.app}</strong>de la venta general</div>
-      <div><strong>${st.canal.presencial}</strong>vendidas de butacas bloqueadas</div>
+      <div><strong>${st.canal.virtual}</strong>en venta virtual</div>
+      <div><strong>${st.canal.fisica}</strong>en venta física</div>
     </div>
   </div>
   <div class="caja"><h2>Exportar</h2>
@@ -963,11 +967,17 @@ function hojaVenta(v, m) {
   const tipo = ed ? v.tipo : 'general', esp = ed && v.tipo === 'especial' ? Object.values(v.precios || {})[0] : '';
   const medios = MEDIOS.includes(p.medio) || !p.medio || p.medio === 'No aplica' ? MEDIOS : [p.medio, ...MEDIOS];
   const mods = MODALIDADES.includes(en.modalidad) || !en.modalidad ? MODALIDADES : [en.modalidad, ...MODALIDADES];
-  const vendedores = [...new Set([U.nombre, ...Object.values(S.usuarios).map(u => u.nombre), ...Object.values(S.ventas).map(x => x.vendedor)].filter(Boolean))];
+  const vendedores = [...new Set([U.nombre, ...Object.values(S.usuarios).map(u => u.nombre), ...Object.values(S.ventas).map(x => x.vendedor), ...Object.values(S.ventas).map(x => (x.entrega || {}).responsable)].filter(Boolean))];
+  const cuentas = [...new Set(Object.values(S.ventas).map(x => (x.pago || {}).cuenta).filter(Boolean))];
+  const canal = ed ? (v.canal === 'fisica' ? 'fisica' : 'virtual') : (m.deCupo ? 'fisica' : 'virtual');
   return `<form data-f="${ed ? 'editar' : 'venta'}" novalidate>
     <header class="hoja-cab"><h2>${ed ? 'Editar venta ' + esc(v.codigo) : m.deCupo ? 'Vender butacas bloqueadas' : 'Registrar venta'}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
     <div class="hoja-cuerpo">
       <p class="res-but"><b>${entradas(ids.length)}</b>${esc(resumenAsientos(ids))}</p>
+      <fieldset><legend>Canal</legend>
+        <div class="ops">${Object.entries(CANALES).map(([k, n]) => opcion('canal', k, n, canal === k)).join('')}</div>
+        ${!ed && m.deCupo ? '<p class="nota">Son butacas bloqueadas' + (m.bloqueo ? ' (' + esc(m.bloqueo) + ')' : '') + ', por eso se propone venta física.</p>' : ''}
+      </fieldset>
       <fieldset><legend>Tipo de entrada</legend>
         <div class="ops">${Object.entries(TIPOS).map(([k, n]) => opcion('tipo', k, n, tipo === k)).join('')}</div>
         <label class="campo" data-solo="especial">Precio por entrada (S/)<input type="number" name="precioEsp" min="0" step="0.5" inputmode="decimal" value="${esc(esp)}"></label>
@@ -984,15 +994,17 @@ function hojaVenta(v, m) {
         <div class="ops">${opcion('pagoEstado', 'pagado', 'Pagado', p.estado !== 'pendiente')}${opcion('pagoEstado', 'pendiente', 'Pendiente (separa las butacas)', p.estado === 'pendiente')}</div>
         <div class="dos">
           <label class="campo">Medio de pago<select name="medio">${medios.map(x => `<option ${p.medio === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
-          <label class="campo">N.º de operación (opcional)<input type="text" name="nroOp" autocomplete="off" value="${esc(p.nroOp)}"></label>
+          <label class="campo">Cuenta de destino (quién recibió el pago)<input type="text" name="cuenta" list="dlCta" autocomplete="off" value="${esc(p.cuenta)}"></label>
         </div>
+        <datalist id="dlCta">${cuentas.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
       </fieldset>
       <fieldset><legend>Entrega</legend>
         <label class="campo">Modalidad<select name="modalidad">${mods.map(x => `<option ${en.modalidad === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
+        <label class="campo">Responsable de entrega<input type="text" name="responsable" list="dlVend" autocomplete="off" value="${esc(en.responsable)}"></label>
         <label class="chk"><input type="checkbox" name="entregada" ${en.hecha ? 'checked' : ''}>Las entradas ya se entregaron</label>
       </fieldset>
-      <fieldset><legend>Responsable</legend>
-        <label class="campo">Vendedor<input type="text" name="vendedor" list="dlVend" autocomplete="off" required value="${esc(ed ? v.vendedor : U.nombre)}"></label>
+      <fieldset><legend>Vendedor</legend>
+        <label class="campo">Quién hizo la venta<input type="text" name="vendedor" list="dlVend" autocomplete="off" required value="${esc(ed ? v.vendedor : U.nombre)}"></label>
         <datalist id="dlVend">${vendedores.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
         <label class="campo">Observaciones<textarea name="obs">${esc(v ? v.obs : '')}</textarea></label>
         <p class="nota">Además del vendedor, el historial guarda quién registró cada cambio (${esc(U.nombre)}).</p>
@@ -1013,7 +1025,7 @@ function actualizarFormVenta(f) {
 function leerFormVenta(f) {
   const e = f.elements, err = $('.err', f);
   const d = { tipo: e.tipo.value, precioEsp: e.precioEsp.value, nombre: e.nombre.value.trim(), doc: e.doc.value.trim(), tel: e.tel.value.trim(),
-    pagoEstado: e.pagoEstado.value, medio: e.medio.value, nroOp: e.nroOp.value.trim(), modalidad: e.modalidad.value, entregada: e.entregada.checked,
+    pagoEstado: e.pagoEstado.value, medio: e.medio.value, cuenta: e.cuenta.value.trim(), modalidad: e.modalidad.value, responsable: e.responsable.value.trim(), entregada: e.entregada.checked, canal: e.canal.value,
     vendedor: e.vendedor.value.trim(), obs: e.obs.value.trim() };
   let msg = '';
   if (!d.nombre) msg = 'Falta el nombre del comprador.';
@@ -1036,10 +1048,12 @@ function hojaDetalle(id) {
       <dt>Entradas</dt><dd>${ids.length}, ${esc(TIPOS[v.tipo] || v.tipo)}</dd>
       <dt>Butacas</dt><dd>${esc(resumenAsientos(ids))}</dd>
       <dt>Total</dt><dd>${sol(v.total)}</dd>
-      ${v.tipo !== 'cortesia' ? `<dt>Pago</dt><dd>${esc(p.medio)}, ${p.estado === 'pendiente' ? 'pendiente' : 'pagado' + (p.fecha ? ' el ' + fch(p.fecha) : '')}${p.nroOp ? ', operación ' + esc(p.nroOp) : ''}</dd>` : ''}
-      <dt>Entrega</dt><dd>${esc(en.modalidad)}, ${en.hecha ? 'realizada' + (en.fecha ? ' el ' + fch(en.fecha) : '') + (en.por ? ' por ' + esc(en.por) : '') : 'pendiente'}</dd>
+      ${v.tipo !== 'cortesia' ? `<dt>Pago</dt><dd>${esc(p.medio)}, ${p.estado === 'pendiente' ? 'pendiente' : 'pagado' + (p.fecha ? ' el ' + fch(p.fecha) : '')}</dd>
+      <dt>Cuenta de destino</dt><dd>${esc(p.cuenta) || 'Sin indicar'}</dd>` : ''}
+      <dt>Entrega</dt><dd>${esc(en.modalidad)}, ${en.hecha ? 'realizada' + (en.fecha ? ' el ' + fch(en.fecha) : '') : 'pendiente'}</dd>
+      <dt>Responsable de entrega</dt><dd>${esc(en.responsable) || 'Sin asignar'}</dd>
       <dt>Vendedor</dt><dd>${esc(v.vendedor)}</dd>
-      <dt>Canal</dt><dd>${v.canal === 'presencial' ? 'Butacas bloqueadas' + (v.bloqueo ? ' (' + esc(v.bloqueo) + ')' : '') : 'Venta general'}</dd>
+      <dt>Canal</dt><dd>${v.canal === 'fisica' ? 'Venta física' : 'Venta virtual'}${v.bloqueo ? ' (butacas bloqueadas: ' + esc(v.bloqueo) + ')' : ''}</dd>
       <dt>Registrada</dt><dd>${fch(v.creado)}${v.registradoPor ? ' por ' + esc(v.registradoPor.nombre) : ''}</dd>
       ${v.obs ? `<dt>Observaciones</dt><dd>${esc(v.obs)}</dd>` : ''}
       ${v.anulacion ? `<dt>Anulación</dt><dd>${fch(v.anulacion.ts)} por ${esc(v.anulacion.por)}. ${esc(v.anulacion.motivo)}</dd>` : ''}
@@ -1076,12 +1090,12 @@ function hojaConfirmar(m) {
 }
 function confirmar(titulo, texto, boton, alAceptar) { abrir({ tipo: 'confirmar', titulo, texto, boton, alAceptar }); }
 function hojaBloquear(m) {
-  const motivos = [...new Set(['Venta presencial', ...Object.values(S.bloqueos).map(b => b.motivo)].filter(Boolean))];
+  const motivos = [...new Set(['Venta física', ...Object.values(S.bloqueos).map(b => b.motivo)].filter(Boolean))];
   return `<form data-f="bloquear" novalidate>
     <header class="hoja-cab"><h2>Bloquear ${butacas(m.ids.length)}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
     <div class="hoja-cuerpo">
       <p class="res-but"><b>${butacas(m.ids.length)}</b>${esc(resumenAsientos(m.ids))}</p>
-      <label class="campo">Motivo o destino del bloqueo<input type="text" name="motivo" list="dlMot" autocomplete="off" value="Venta presencial"></label>
+      <label class="campo">Motivo o destino del bloqueo<input type="text" name="motivo" list="dlMot" autocomplete="off" value="Venta física"></label>
       <datalist id="dlMot">${motivos.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
       <p class="nota">Quedan fuera de la venta general hasta que alguien las desbloquee. El bloqueo se registra a nombre de ${esc(U.nombre)}.</p>
       <p class="err" hidden></p>
@@ -1185,6 +1199,7 @@ const A = {
   anular(b) { abrir({ tipo: 'anular', id: b.dataset.v }); },
   async alternarEntrega(b) {
     const id = b.dataset.v, n = copia(S.ventas[id]); n.entrega = n.entrega || {}; n.entrega.hecha = !n.entrega.hecha;
+    if (n.entrega.hecha && !n.entrega.responsable) n.entrega.responsable = U.nombre;
     await intentar(() => guardarVenta(id, n, n.entrega.hecha ? 'Entrega realizada' : 'Entrega marcada como pendiente'), n.entrega.hecha ? 'Entrega registrada.' : 'Entrega marcada como pendiente.', b);
   },
   async marcarPagada(b) {
@@ -1209,16 +1224,16 @@ const A = {
   async confirmarSi(b) { const m = UI.modal; b.disabled = true; await m.alAceptar(); cerrar(); pintar(); },
   exportarButacas() {
     const cab = ['ID Asiento', 'Sector', 'Fila', 'Número de Asiento', 'Precio', 'Estado', 'Comprador', 'DNI', 'Teléfono', 'Fecha de Pago', 'Observaciones',
-      'Código de venta', 'Tipo de entrada', 'Precio cobrado', 'Medio de pago', 'Pago', 'N.º de operación', 'Modalidad de entrega', 'Entregada', 'Vendedor', 'Canal', 'Bloqueo', 'Fecha de registro'];
+      'Código de venta', 'Tipo de entrada', 'Precio cobrado', 'Medio de pago', 'Pago', 'Cuenta de destino', 'Modalidad de entrega', 'Responsable de entrega', 'Entregada', 'Vendedor', 'Canal', 'Bloqueo', 'Fecha de registro'];
     const nomE = { libre: 'Disponible', cupo: 'Bloqueado', vendido: 'Vendido', reservado: 'Pago pendiente', cortesia: 'Cortesía' };
     const fx = ts => ts ? new Date(ts).toLocaleString('es-PE') : '';
     const filas = [...LISTA].sort((a, b) => a.sector.localeCompare(b.sector) || FILAS[a.sector].indexOf(b.fila) - FILAS[a.sector].indexOf(a.fila) || a.num - b.num).map(a => {
       const e = estadoAsiento(a.id), v = e.venta, r = S.asientos[a.id] || {};
       const base = ['Sector ' + a.id, 'Sector ' + a.sector, a.fila, a.num, a.precio, nomE[e.e]];
-      if (!v) return [...base, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', r.p ? motivoDe(a.id) : '', ''];
+      if (!v) return [...base, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', r.p ? motivoDe(a.id) : '', ''];
       const c = v.comprador || {}, p = v.pago || {}, en = v.entrega || {};
-      return [...base, c.nombre, c.doc, c.tel, fx(p.fecha), v.obs, v.codigo, TIPOS[v.tipo] || v.tipo, precioDe(v, a.id), p.medio, p.estado === 'pendiente' ? 'Pendiente' : 'Pagado', p.nroOp,
-        en.modalidad, en.hecha ? 'Sí' : 'No', v.vendedor, v.canal === 'presencial' ? 'Bloqueo' : 'General', r.p ? motivoDe(a.id) : '', fx(v.creado)];
+      return [...base, c.nombre, c.doc, c.tel, fx(p.fecha), v.obs, v.codigo, TIPOS[v.tipo] || v.tipo, precioDe(v, a.id), p.medio, p.estado === 'pendiente' ? 'Pendiente' : 'Pagado', p.cuenta,
+        en.modalidad, en.responsable, en.hecha ? 'Sí' : 'No', v.vendedor, v.canal === 'fisica' ? 'Venta física' : 'Venta virtual', r.p ? motivoDe(a.id) : '', fx(v.creado)];
     });
     descargar('control-entradas-saqra.csv', csv([cab, ...filas]));
   },
@@ -1252,8 +1267,9 @@ const F = {
     const id = UI.modal.id, v = S.ventas[id], n = copia(v), ids = asientosDe(v), c = calcularPrecios(ids, d.tipo, d.precioEsp), cort = d.tipo === 'cortesia';
     n.tipo = d.tipo; n.precios = c.precios; n.total = c.total;
     n.comprador = { nombre: d.nombre, doc: d.doc, tel: d.tel };
-    n.pago = Object.assign({}, v.pago, cort ? { medio: 'No aplica', estado: 'pagado', nroOp: '' } : { medio: d.medio, estado: d.pagoEstado, nroOp: d.nroOp });
-    n.entrega = Object.assign({}, v.entrega, { modalidad: d.modalidad, hecha: d.entregada });
+    n.pago = Object.assign({}, v.pago, cort ? { medio: 'No aplica', estado: 'pagado', cuenta: '' } : { medio: d.medio, estado: d.pagoEstado, cuenta: d.cuenta });
+    n.entrega = Object.assign({}, v.entrega, { modalidad: d.modalidad, responsable: d.responsable, hecha: d.entregada });
+    n.canal = d.canal;
     n.vendedor = d.vendedor; n.obs = d.obs;
     const r = await intentar(() => guardarVenta(id, n), '', $('.btn.pri', f));
     if (r === false) return;
