@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Control de entradas | Danzas de Paucartambo: SAQRA</title>
+<style>
+:root{
+  color-scheme:light;
+  --tinta:#241A3A; --tinta2:#51476B; --gris:#857F9B; --linea:#DCD8E8; --fondo:#F2F1F7; --papel:#FFFFFF;
+  --rojo:#D9381E; --rojo-t:#FBE0D9; --rojo-d:#8C200D;
+  --azul:#0A7FC9; --azul-t:#D6EBF9; --azul-d:#07507F;
+  --verde:#0F9150; --verde-t:#D7F0E1; --verde-d:#0A5C33;
+  --maiz:#F5B400; --fucsia:#C2187A;
+  --f:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --fc:'Barlow Semi Condensed','Roboto Condensed','Arial Narrow',system-ui,sans-serif;
+  --s:30px; --g:3px; --lab:30px;
+  --nav:58px;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:env(safe-area-inset-top,0px);background:var(--tinta)}
+body{margin:0;min-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));background:var(--fondo);color:var(--tinta);font:400 16px/1.45 var(--f)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--azul);outline-offset:2px}
+h1,h2,h3{font-family:var(--fc);margin:0;line-height:1.15}
+
+/* Cabecera */
+.cab{background:var(--tinta);color:#fff}
+.cab-in{max-width:1180px;margin:0 auto;padding:14px 16px 12px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-start;justify-content:space-between}
+.cab-in > div:first-child{flex:1 1 240px;min-width:0}
+.cab h1{font-size:26px;font-weight:700;letter-spacing:.2px}
+.cab .sub{font:700 16px/1.2 var(--fc);letter-spacing:4px;color:var(--maiz);margin-top:2px}
+.cab p{margin:3px 0 0;font-size:14px;color:#CFC8E4}
+.cab-der{display:flex;flex-wrap:wrap;gap:6px;align-items:center;max-width:100%}
+.chip{border:1px solid #6B6189;background:transparent;color:#fff;border-radius:999px;padding:3px 10px;font-size:13px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.chip.demo{background:var(--maiz);border-color:var(--maiz);color:var(--tinta);font-weight:600}
+.chip.ok{border-color:#58D39A;color:#9EF0C6}
+.chip.off{border-color:#FF9C8A;color:#FFB9AC}
+
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;height:calc(var(--nav) + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);background:var(--papel);border-top:1px solid var(--linea);display:grid;grid-template-columns:repeat(4,1fr)}
+.tabs button{border:0;background:none;font:600 16px var(--fc);color:var(--gris);border-top:3px solid transparent}
+.tabs button[aria-current=page]{color:var(--tinta);border-top-color:var(--tinta)}
+
+/* Franja de ocupación */
+.ocu{background:var(--papel);border-bottom:1px solid var(--linea)}
+.ocu-in{max-width:1180px;margin:0 auto;padding:10px 16px}
+.ocu-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:#E7E4F0}
+.ocu-bar i{display:block;height:100%}
+.o-vendido{background:var(--tinta)} .o-reservado{background:var(--maiz)} .o-cortesia{background:var(--fucsia)}
+.o-cupo{background:repeating-linear-gradient(135deg,#fff 0 3px,#A8A2BC 3px 6px)}
+.ley{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--tinta2)}
+.ley li{display:flex;align-items:center;gap:6px}
+.ley b{font-weight:600;color:var(--tinta);font-variant-numeric:tabular-nums}
+.pt{width:12px;height:12px;border-radius:3px;border:1px solid var(--gris);flex:none}
+.pt.o-libre{background:#E7E4F0;border-color:#C9C4DA}
+.pt.o-vendido,.pt.o-reservado,.pt.o-cortesia{border-color:transparent}
+
+main{max-width:1180px;margin:0 auto;padding:0 0 calc(var(--nav) + 24px)}
+body.con-sel main{padding-bottom:calc(var(--nav) + 150px)}
+.pad{padding:16px}
+
+/* Mapa */
+.mbarra{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--fondo);padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--linea)}
+.modo{display:flex;border:1.5px solid var(--tinta);border-radius:8px;overflow:hidden}
+.modo button{border:0;background:var(--papel);padding:6px 14px;min-height:34px;font-weight:600;font-size:14.5px}
+.modo button[aria-pressed=true]{background:var(--tinta);color:#fff}
+.aviso.bloq{background:#ECEAF3;border:1.5px dashed var(--tinta2)}
+.tanda{border-top:1px solid var(--linea);padding:12px 0 4px;margin-top:12px}
+.tanda b{font:700 18px var(--fc)}
+.tanda .det{font-size:14.5px;color:var(--tinta2)}
+.tanda .accs{margin-top:8px}
+.btn{border:1.5px solid var(--tinta);background:var(--papel);border-radius:8px;padding:9px 14px;font-weight:600;min-height:42px}
+.btn.pri{background:var(--tinta);color:#fff}
+.btn.pel{border-color:var(--rojo);color:var(--rojo)}
+.btn.mini{padding:5px 11px;min-height:34px;font-size:14.5px}
+.btn:disabled{opacity:.5;cursor:default}
+.ira{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--tinta2)}
+.ira button{border:0;border-radius:6px;color:#fff;font:700 14.5px var(--fc);padding:6px 11px;min-height:34px}
+.ira .sA{background:var(--rojo)} .ira .sB{background:var(--azul)} .ira .sC{background:var(--verde)}
+.aviso{margin:10px 16px 0;padding:9px 12px;border-radius:8px;background:#FFF4CF;border:1px solid #EBCB63;font-size:14.5px}
+.mscroll{overflow-x:auto;padding:12px 8px 20px;-webkit-overflow-scrolling:touch}
+.mapa{width:max-content;margin:0 auto}
+.sec-tit{display:flex;gap:10px;align-items:baseline;margin:18px 0 8px;padding:5px calc(var(--lab) + var(--g));font-family:var(--fc);font-size:15px;color:var(--tinta2);position:sticky;left:0;max-width:92vw;scroll-margin-top:70px}
+.sec-tit:first-child{margin-top:0}
+.sec-tit > *{white-space:nowrap;flex:none}
+.sec-tit b{font-size:19px;color:#fff;padding:1px 9px;border-radius:5px}
+.sec-tit.sA b{background:var(--rojo)} .sec-tit.sB b{background:var(--azul)} .sec-tit.sC b{background:var(--verde)}
+.sec-tit em{font-style:normal;font-weight:700;color:var(--tinta)}
+.fila{display:grid;grid-template-columns:var(--lab) repeat(25,var(--s)) var(--lab);gap:var(--g);margin-bottom:var(--g);align-items:center}
+.sep{height:calc(var(--s)*.6)}
+.fl{grid-row:1;font:600 13px var(--fc);color:var(--tinta2);text-align:center;white-space:nowrap;border:0;background:none;padding:0;cursor:default;min-height:var(--s)}
+.modo-bloq .mapa:not(.mini) .fl{cursor:pointer;color:var(--tinta);text-decoration:underline}
+.mapa.mini .fl{pointer-events:none}
+.fl:first-child{position:sticky;left:0;z-index:2;background:var(--fondo);align-self:stretch;display:grid;place-items:center;box-shadow:4px 0 0 var(--fondo),-10px 0 0 var(--fondo)}
+.b{grid-row:1;width:var(--s);height:var(--s);padding:0;border:1.5px solid var(--cb);border-radius:calc(var(--s)*.34) calc(var(--s)*.34) 4px 4px;background:var(--ct);color:var(--cd);font:600 calc(var(--s)*.44)/1 var(--fc);font-variant-numeric:tabular-nums}
+.b.sA{--c:var(--rojo);--ct:var(--rojo-t);--cd:var(--rojo-d);--cb:#EFA898}
+.b.sB{--c:var(--azul);--ct:var(--azul-t);--cd:var(--azul-d);--cb:#8FC6EA}
+.b.sC{--c:var(--verde);--ct:var(--verde-t);--cd:var(--verde-d);--cb:#8DD0AC}
+.b.e-vendido{background:var(--tinta);border-color:var(--tinta);color:#fff}
+.b.e-reservado{background:var(--maiz);border-color:#C28F00;color:var(--tinta)}
+.b.e-cortesia{background:var(--fucsia);border-color:var(--fucsia);color:#fff}
+.b.e-cupo{background:repeating-linear-gradient(135deg,#fff 0 3px,#D5D1E2 3px 6px);border:1.5px dashed var(--tinta2);color:var(--tinta)}
+.b.sel{background:var(--c);border:1.5px solid #fff;color:#fff;box-shadow:0 0 0 2.5px var(--tinta)}
+.mapa.mini{cursor:pointer}
+.mapa.mini .b{font-size:0;border-width:1px;border-radius:2px;pointer-events:none}
+.mapa.mini .b.sel{box-shadow:0 0 0 1.5px var(--tinta)}
+.mapa.mini .fl{font-size:9px}
+.mapa.mini .sec-tit{font-size:13px;margin:12px 0 5px}
+.mapa.mini .sec-tit b{font-size:15px}
+.esc{grid-row:1;grid-column:10 / 25;text-align:center;font:600 15px var(--fc);border-radius:6px;padding:6px 0}
+.esc.foso{background:#E3E0EC;color:var(--tinta2);margin-top:10px}
+.esc.tabl{background:var(--tinta);color:#fff;padding:12px 0;font-size:17px;letter-spacing:1px}
+.mapa.mini .esc{font-size:11px;padding:3px 0}
+
+/* Barra de selección */
+.selbar{position:fixed;left:0;right:0;bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px));z-index:25;background:var(--papel);border-top:2px solid var(--tinta);padding:10px 16px;box-shadow:0 -6px 18px rgba(36,26,58,.14)}
+.selbar-in{max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.selbar .txt{flex:1 1 220px;min-width:0;font-size:14.5px;line-height:1.3}
+.selbar .txt b{font:700 19px var(--fc);display:block}
+.selbar .acc{display:flex;flex-wrap:wrap;gap:8px}
+
+/* Listas y tarjetas */
+.busca{display:flex;gap:8px;flex-wrap:wrap}
+.busca input{flex:1 1 220px}
+input[type=text],input[type=search],input[type=number],input[type=email],input[type=password],input[type=tel],select,textarea{width:100%;border:1.5px solid #B9B3CE;border-radius:8px;padding:10px 11px;background:#fff;min-height:44px}
+textarea{min-height:70px;resize:vertical}
+.filtros{display:flex;gap:6px;overflow-x:auto;padding:12px 0 4px}
+.filtros button{flex:none;border:1.5px solid #B9B3CE;background:var(--papel);border-radius:999px;padding:5px 12px;font-size:14.5px}
+.filtros button[aria-pressed=true]{background:var(--tinta);border-color:var(--tinta);color:#fff}
+.venta{display:block;width:100%;text-align:left;background:var(--papel);border:1px solid var(--linea);border-left:5px solid var(--tinta);border-radius:8px;padding:11px 13px;margin-top:10px}
+.venta.pend{border-left-color:var(--maiz)} .venta.cort{border-left-color:var(--fucsia)} .venta.anul{border-left-color:var(--gris);opacity:.7}
+.venta .l1{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.venta .cod{font:700 16px var(--fc);color:var(--tinta2)}
+.venta .nom{font:600 19px var(--fc);margin:2px 0}
+.venta .det{font-size:14.5px;color:var(--tinta2)}
+.et{font-size:12.5px;font-weight:600;border-radius:4px;padding:1px 7px;background:#E7E4F0;color:var(--tinta2)}
+.et.ok{background:var(--verde-t);color:var(--verde-d)} .et.pend{background:#FFEBB0;color:#6B4E00} .et.cort{background:#F8D3E8;color:#7D0E4E} .et.mal{background:var(--rojo-t);color:var(--rojo-d)} .et.cupo{background:#E7E4F0;color:var(--tinta)}
+.vacio{padding:28px 8px;text-align:center;color:var(--tinta2)}
+
+.caja{background:var(--papel);border:1px solid var(--linea);border-radius:10px;padding:16px;margin-bottom:14px}
+.caja h2{font-size:21px;margin-bottom:10px}
+.caja h3{font-size:17px;margin:14px 0 6px}
+.caja p{margin:6px 0}
+.nota{font-size:14.5px;color:var(--tinta2)}
+.cifras{display:flex;flex-wrap:wrap;gap:8px 28px}
+.cifras div{font-size:14.5px;color:var(--tinta2)}
+.cifras strong{display:block;font:700 30px/1.1 var(--fc);color:var(--tinta);font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--linea);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font:600 14px var(--fc);color:var(--tinta2)}
+tfoot td{font-weight:700;border-bottom:0}
+.cupo-fila{display:grid;grid-template-columns:1fr;gap:8px;padding:12px 0;border-top:1px solid var(--linea)}
+.cupo-fila .ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cupo-fila input[type=number]{width:86px}
+.cupo-fila select{width:auto;flex:1 1 170px}
+.hist{list-style:none;margin:0;padding:0}
+.hist li{padding:9px 0;border-top:1px solid var(--linea);font-size:15px}
+.hist li:first-child{border-top:0}
+.hist time{display:block;font-size:13px;color:var(--gris)}
+.hist .cmb{display:block;font-size:14px;color:var(--tinta2);margin-top:2px}
+.hist del{color:var(--rojo-d)} .hist ins{color:var(--verde-d);text-decoration:none;font-weight:600}
+
+/* Hojas (modales) */
+.velo{position:fixed;top:0;right:0;bottom:0;left:0;cursor:pointer;z-index:50;background:rgba(36,26,58,.55);display:flex;align-items:flex-end;justify-content:center}
+.hoja{cursor:auto;background:var(--papel);width:100%;max-width:640px;max-height:94vh;max-height:94dvh;border-radius:14px 14px 0 0;display:flex;flex-direction:column;overflow:hidden}
+.hoja form{display:flex;flex-direction:column;min-height:0;flex:1}
+.hoja-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--linea)}
+.hoja-cab h2{font-size:22px}
+.x{border:0;background:#E7E4F0;border-radius:50%;width:38px;height:38px;font-size:22px;line-height:1;flex:none}
+.hoja-cuerpo{padding:14px 16px;overflow-y:auto;flex:1}
+.hoja-pie{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--linea);background:var(--papel)}
+fieldset{border:0;border-top:1px solid var(--linea);margin:14px 0 0;padding:12px 0 0}
+legend{font:700 17px var(--fc);padding:0 8px 0 0}
+.campo{display:block;margin-top:10px;font-size:14.5px;font-weight:500;color:var(--tinta2)}
+.campo input,.campo select,.campo textarea{margin-top:3px;color:var(--tinta);font-weight:400}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.ops{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.ops label{position:relative}
+.ops input{position:absolute;opacity:0;top:0;left:0;width:100%;height:100%;margin:0}
+.ops span{display:block;border:1.5px solid #B9B3CE;border-radius:8px;padding:8px 13px;font-weight:500}
+.ops input:checked + span{background:var(--tinta);border-color:var(--tinta);color:#fff}
+.ops input:focus-visible + span{outline:3px solid var(--azul);outline-offset:2px}
+.chk{display:flex;gap:9px;align-items:center;margin-top:12px}
+.chk input{width:22px;height:22px}
+.res-but{background:var(--fondo);border-radius:8px;padding:10px 12px;margin:0;font-size:15px}
+.res-but b{font:700 19px var(--fc);display:block}
+.total{display:flex;justify-content:space-between;align-items:baseline;margin:12px 0 0;font-weight:600}
+.total output{font:700 28px var(--fc)}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:15.5px}
+dt{color:var(--tinta2)} dd{margin:0;font-weight:500;overflow-wrap:anywhere}
+.accs{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.err{color:var(--rojo-d);font-weight:600;margin:10px 0 0}
+
+/* Entrada (login) */
+.puerta{min-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));display:grid;place-items:center;padding:20px;background:var(--tinta)}
+.puerta form{background:var(--papel);border-radius:14px;padding:22px;width:100%;max-width:400px}
+.puerta h1{font-size:28px} .puerta .sub{font:700 17px/1.2 var(--fc);letter-spacing:4px;color:var(--fucsia);margin-top:2px} .puerta p{margin:6px 0 0;color:var(--tinta2);font-size:15px}
+.puerta .btn{width:100%;margin-top:16px}
+
+#toasts{position:fixed;left:0;right:0;top:calc(12px + env(safe-area-inset-top,0px));z-index:80;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:0 12px}
+.toast{background:var(--tinta);color:#fff;padding:10px 16px;border-radius:8px;font-size:15px;max-width:520px;box-shadow:0 6px 20px rgba(36,26,58,.3)}
+.toast.error{background:var(--rojo-d)}
+.toast.ok{background:var(--verde-d)}
+
+@media (min-width:900px){
+  :root{--nav:0px}
+  .cab-in{padding-bottom:0}
+  .tabs{position:static;height:auto;max-width:1180px;margin:0 auto;padding:6px 16px 0;background:none;border:0;display:flex;gap:4px}
+  .tabs button{color:#CFC8E4;padding:10px 18px;border-top:0;border-bottom:4px solid transparent;font-size:17px}
+  .tabs button[aria-current=page]{color:#fff;border-bottom-color:var(--maiz)}
+  .velo{align-items:center}
+  .hoja{border-radius:14px;max-height:88vh}
+  .cupo-fila{grid-template-columns:200px 1fr;align-items:center}
+}
+@media (max-width:420px){ .cab h1{font-size:22px} .dos{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:no-preference){
+  .hoja{animation:sube .18s ease-out}
+  @keyframes sube{from{transform:translateY(24px)}to{transform:none}}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <p style="margin:0;padding:28px 20px;font:16px/1.5 system-ui,sans-serif;color:#241A3A">Cargando el control de entradas…</p>
+  <noscript><p style="margin:0;padding:0 20px 28px;font:16px/1.5 system-ui,sans-serif;color:#241A3A">Aquí no se puede usar el app: este visor solo muestra el archivo, no lo ejecuta. Ábrelo con su dirección web en Safari o Chrome, no como archivo adjunto.</p></noscript>
+</div>
+<div id="modal"></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+// Si algo falla al cargar, el motivo aparece en pantalla en vez de quedar en blanco.
+(function () {
+  function mostrar(txt) {
+    var d = document.getElementById('fallo');
+    if (!d) {
+      d = document.createElement('div'); d.id = 'fallo';
+      d.style.cssText = 'position:fixed;left:8px;right:8px;top:8px;z-index:999;background:#8C200D;color:#fff;padding:12px 14px;border-radius:8px;font:14px/1.4 system-ui,sans-serif';
+      (document.body || document.documentElement).appendChild(d);
+    }
+    d.textContent = 'El app tuvo un error: ' + txt + '. Envía una captura de este mensaje.';
+  }
+  window.addEventListener('error', function (e) { if (e && e.message) mostrar(e.message + (e.lineno ? ' (línea ' + e.lineno + ')' : '')); });
+  window.addEventListener('unhandledrejection', function (e) { var r = e && e.reason; mostrar(r && r.message ? r.message : String(r)); });
+})();
+</script>
+<script>
+'use strict';
+/* =====================================================================
+   1. CONFIGURACIÓN
+   ---------------------------------------------------------------------
+   Mientras FIREBASE_CONFIG sea null, el app corre en MODO DEMO: todo
+   funciona, pero los datos viven solo en la memoria de esta pestaña.
+   Para conectar Firebase (Realtime Database + Authentication con correo
+   y contraseña), pega aquí la configuración del proyecto:
+
+   const FIREBASE_CONFIG = {
+     apiKey: "...", authDomain: "...", databaseURL: "...",
+     projectId: "...", appId: "..."
+   };
+   ===================================================================== */
+const FIREBASE_CONFIG = null;
+const FIREBASE_SDK = '10.12.2';
+
+const EVENTO = {
+  nombre: 'Danzas de Paucartambo',
+  subtitulo: 'SAQRA',
+  lugar: 'Teatro Municipal del Cusco',
+  fecha: 'viernes 13 de noviembre de 2026'
+};
+const SECTORES = {
+  A: { nombre: 'Sector A', zona: '1er piso (rojo)', precio: 90 },
+  B: { nombre: 'Sector B', zona: '2do piso (azul)', precio: 80 },
+  C: { nombre: 'Sector C', zona: 'Superior (verde)', precio: 70 }
+};
+const TIPOS = { general: 'General', cortesia: 'Cortesía', especial: 'Precio especial' };
+const MEDIOS = ['Efectivo', 'Yape', 'Plin', 'Transferencia', 'Tarjeta (POS)', 'Otro'];
+const MODALIDADES = ['Entrega física', 'Envío digital (WhatsApp o correo)', 'Recojo en boletería'];
+
+/* =====================================================================
+   2. PLANO DEL TEATRO
+   Tomado de PLANO_DE_BUTACAS_TEATRO_MUNICIPAL_CUSCO.xlsx, con la misma
+   orientación (escenario abajo) y la fila V del Excel de control.
+   Cada bloque es [columna inicial, primer número, cantidad].
+   ===================================================================== */
+const F21 = [[2, 1, 6], [9, 7, 9], [19, 16, 6]];
+const F18 = [[3, 1, 5], [9, 6, 8], [19, 14, 5]];
+const C19 = [[2, 1, 5], [8, 6, 9], [18, 15, 5]];
+const C11 = [[3, 1, 3], [8, 4, 2], [13, 10, 3], [18, 13, 3]];
+const A17 = [[4, 5, 2], [9, 7, 9], [19, 16, 6]];
+const A15 = [[9, 7, 9], [19, 16, 6]];
+const PLANO = [
+  { sector: 'C', off: 1, filas: [
+    ['I', [[2, 1, 4], [8, 5, 8], [18, 13, 4]]], ['H', C11], ['G', C11], ['F', C11], null,
+    ['E', C19], ['D', C19], ['C', C19], ['B', C19], ['A', C19]] },
+  { sector: 'B', off: 0, filas: [
+    ['V', [[1, 1, 25]]], ['U', F18], ['T', F21], ['S', F18], ['R', F21], ['Q', F18], ['P', F21],
+    ['O', F18], ['N', F21], ['M', F18], ['L', F21], ['K', F18], ['J', F21]] },
+  { sector: 'A', off: 0, filas: [
+    ['I', F21], ['H', F21], ['G', F21], ['F', F21], ['E', F21], ['D', F21],
+    ['C', A15], ['B', A17], ['A', A17], ['A+1', A15]] }
+];
+const ASIENTOS = {};   // id -> {id, sector, fila, num, precio, col, orden}
+const LISTA = [];      // mismo contenido, en orden de plano (de atrás hacia el escenario)
+const FILAS = {};      // sector -> [fila, ...] de atrás hacia adelante
+(function () {
+  let orden = 0;
+  for (const blq of PLANO) {
+    FILAS[blq.sector] = [];
+    for (const f of blq.filas) {
+      if (!f) continue;
+      FILAS[blq.sector].push(f[0]);
+      for (const [col, n0, cant] of f[1]) for (let i = 0; i < cant; i++) {
+        const a = { id: blq.sector + '-' + f[0] + '-' + (n0 + i), sector: blq.sector, fila: f[0], num: n0 + i,
+          precio: SECTORES[blq.sector].precio, col: col + i + blq.off, orden: orden++ };
+        ASIENTOS[a.id] = a; LISTA.push(a);
+      }
+    }
+  }
+})();
+const TOTAL = LISTA.length;
+
+/* =====================================================================
+   3. UTILIDADES
+   ===================================================================== */
+const $ = (s, el) => (el || document).querySelector(s);
+const $$ = (s, el) => [...(el || document).querySelectorAll(s)];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sol = n => 'S/ ' + Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: (Number(n) || 0) % 1 ? 2 : 0, maximumFractionDigits: 2 });
+const fch = ts => ts ? new Date(ts).toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+const copia = o => JSON.parse(JSON.stringify(o));
+const ordenar = ids => [...ids].sort((a, b) => ASIENTOS[a].orden - ASIENTOS[b].orden);
+const asientosDe = v => !v || !v.asientos ? [] : (Array.isArray(v.asientos) ? v.asientos : Object.values(v.asientos)).filter(id => ASIENTOS[id]);
+const entradas = n => n + (n === 1 ? ' entrada' : ' entradas');
+const butacas = n => n + (n === 1 ? ' butaca' : ' butacas');
+const leer = (o, ruta) => ruta.split('.').reduce((x, k) => (x == null ? x : x[k]), o);
+
+function resumenAsientos(ids) {
+  const g = new Map();
+  for (const id of [...ids].sort((a, b) => ASIENTOS[a].sector.localeCompare(ASIENTOS[b].sector) || ASIENTOS[b].orden - ASIENTOS[a].orden)) {
+    const a = ASIENTOS[id], k = a.sector + '|' + a.fila;
+    if (!g.has(k)) g.set(k, []);
+    g.get(k).push(a.num);
+  }
+  return [...g].map(([k, nums]) => {
+    nums.sort((x, y) => x - y);
+    const [s, f] = k.split('|'), r = [];
+    for (let i = 0; i < nums.length;) {
+      let j = i; while (j + 1 < nums.length && nums[j + 1] === nums[j] + 1) j++;
+      r.push(j === i ? String(nums[i]) : j === i + 1 ? nums[i] + ' y ' + nums[j] : nums[i] + ' al ' + nums[j]);
+      i = j + 1;
+    }
+    return 'Sector ' + s + ', fila ' + f + ': ' + r.join(', ');
+  }).join('; ');
+}
+function calcularPrecios(ids, tipo, especial) {
+  const precios = {}; let total = 0;
+  for (const id of ids) {
+    const p = tipo === 'cortesia' ? 0 : tipo === 'especial' ? (Number(especial) || 0) : ASIENTOS[id].precio;
+    precios[id] = p; total += p;
+  }
+  return { precios, total };
+}
+function toast(msg, tipo) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + (tipo || '');
+  t.textContent = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(() => t.remove(), tipo === 'error' ? 6000 : 3200);
+}
+function csv(filas) {
+  return '\ufeff' + filas.map(f => f.map(c => { c = String(c == null ? '' : c); return /[",;\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(',')).join('\r\n');
+}
+async function descargar(nombre, texto) {
+  // Publicada dentro de claude.ai, la página guarda archivos a través del visor.
+  // En GitHub Pages (u otro sitio propio) no existe ese visor y se descarga directo.
+  if (window.claude && typeof window.claude.use === 'function') {
+    try {
+      const d = await window.claude.use('downloads');
+      if (d) { await d.save({ filename: nombre, data: texto }); toast('Archivo guardado: ' + nombre, 'ok'); return; }
+    } catch (e) {
+      if (!e || e.code !== 'declined') toast('No se pudo guardar el archivo en este visor.', 'error');
+      return;
+    }
+  }
+  try {
+    const u = URL.createObjectURL(new Blob([texto], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = u; a.download = nombre;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 3000);
+    toast('Descargando ' + nombre);
+  } catch (e) { toast('No se pudo descargar el archivo: ' + e.message, 'error'); }
+}
+async function copiarTexto(txt) {
+  try { await navigator.clipboard.writeText(txt); return true; }
+  catch (e) {
+    const ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { return document.execCommand('copy'); } catch (x) { return false; } finally { ta.remove(); }
+  }
+}
+
+/* =====================================================================
+   4. ALMACENES DE DATOS
+   Ambos exponen lo mismo: txAsientos, siguienteNum, actualizar, nuevoId.
+   Estructura:
+     asientos/{id}   -> {v: idVenta} | {p: idBloqueo} | {v: idVenta, p: idBloqueo}
+                        (p = butaca bloqueada; sin registro = disponible)
+     bloqueos/{id}   -> {motivo, por, uid, ts}: cada tanda de butacas bloqueadas
+     ventas/{id}     -> la venta completa
+     historial/{id}  -> registro de cada acción
+     usuarios/{uid}  -> {nombre, correo, activo}
+     contador        -> correlativo de ventas
+   ===================================================================== */
+function almacenLocal(alCambiar) {
+  let db;
+  const emitir = () => alCambiar(copia({ asientos: db.asientos, ventas: db.ventas, historial: db.historial, usuarios: db.usuarios, bloqueos: db.bloqueos }));
+  const api = {
+    modo: 'demo',
+    async txAsientos(fn) { const r = fn(copia(db.asientos)); if (r === undefined) return false; db.asientos = r; emitir(); return true; },
+    async siguienteNum() { return ++db.contador; },
+    async actualizar(obj) {
+      for (const [ruta, val] of Object.entries(obj)) {
+        const p = ruta.split('/'); let o = db;
+        for (let i = 0; i < p.length - 1; i++) { if (o[p[i]] == null) o[p[i]] = {}; o = o[p[i]]; }
+        if (val === null) delete o[p[p.length - 1]]; else o[p[p.length - 1]] = copia(val);
+      }
+      emitir();
+    },
+    nuevoId() { return 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); },
+    reiniciar() { db = { asientos: {}, ventas: {}, historial: {}, usuarios: {}, bloqueos: {}, contador: 0 }; emitir(); }
+  };
+  db = { asientos: {}, ventas: {}, historial: {}, usuarios: {}, bloqueos: {}, contador: 0 };
+  return api;
+}
+function almacenFirebase(fdb, alCambiar) {
+  const cache = { asientos: {}, ventas: {}, historial: {}, usuarios: {}, bloqueos: {} };
+  const oir = (clave, ref) => ref.on('value', s => { cache[clave] = s.val() || {}; alCambiar(cache); },
+    e => toast('No se pudo leer "' + clave + '": ' + e.message, 'error'));
+  oir('asientos', fdb.ref('asientos'));
+  oir('ventas', fdb.ref('ventas'));
+  oir('historial', fdb.ref('historial').limitToLast(600));
+  oir('usuarios', fdb.ref('usuarios'));
+  oir('bloqueos', fdb.ref('bloqueos'));
+  fdb.ref('.info/connected').on('value', s => { EN_LINEA = !!s.val(); pintarChips(); });
+  return {
+    modo: 'firebase',
+    async txAsientos(fn) { const r = await fdb.ref('asientos').transaction(cur => fn(cur || {})); return !!r.committed; },
+    async siguienteNum() { const r = await fdb.ref('contador').transaction(n => (n || 0) + 1); return r.snapshot.val(); },
+    async actualizar(obj) { await fdb.ref().update(obj); },
+    nuevoId() { return fdb.ref('historial').push().key; }
+  };
+}
+
+/* =====================================================================
+   5. ESTADO
+   ===================================================================== */
+let S = { asientos: {}, ventas: {}, historial: {}, usuarios: {}, bloqueos: {} };
+let U = null;            // {uid, nombre}: el nombre queda como responsable de cada acción
+let almacen = null;
+let EN_LINEA = true;
+let cerrarSesion = null;
+const UI = {
+  tab: 'mapa', sel: new Set(), selTipo: null, zoom: 'todo', reubicar: null,
+  filtro: 'activas', q: '', modal: null,
+  modo: 'vender'   // 'vender' | 'bloquear': qué hace un toque sobre una butaca libre
+};
+
+function estadoAsiento(id) {
+  const r = S.asientos[id];
+  if (!r) return { e: 'libre' };
+  if (r.v) {
+    const v = S.ventas[r.v];
+    const e = !v ? 'vendido' : v.tipo === 'cortesia' ? 'cortesia' : (v.pago && v.pago.estado === 'pendiente') ? 'reservado' : 'vendido';
+    return { e, vid: r.v, venta: v, cupo: !!r.p };
+  }
+  return r.p ? { e: 'cupo' } : { e: 'libre' };
+}
+const motivoDe = id => { const r = S.asientos[id]; return (r && r.p && S.bloqueos[r.p] && S.bloqueos[r.p].motivo) || 'sin motivo'; };
+const precioDe = (v, id) => (v && v.precios && v.precios[id] != null) ? Number(v.precios[id]) : ASIENTOS[id].precio;
+
+function estadisticas() {
+  const nuevo = () => ({ total: 0, vendidas: 0, reservadas: 0, cortesias: 0, cupoLibre: 0, cupoTotal: 0, libres: 0, cobrado: 0, porCobrar: 0 });
+  const sec = { A: nuevo(), B: nuevo(), C: nuevo() }, tot = nuevo();
+  for (const a of LISTA) {
+    const e = estadoAsiento(a.id), r = S.asientos[a.id];
+    for (const o of [sec[a.sector], tot]) {
+      o.total++;
+      if (r && r.p) o.cupoTotal++;
+      if (e.e === 'libre') o.libres++;
+      else if (e.e === 'cupo') o.cupoLibre++;
+      else if (e.e === 'cortesia') o.cortesias++;
+      else if (e.e === 'reservado') { o.reservadas++; o.porCobrar += precioDe(e.venta, a.id); }
+      else { o.vendidas++; o.cobrado += precioDe(e.venta, a.id); }
+    }
+  }
+  const vend = {}, medio = {}, canal = { app: 0, presencial: 0 };
+  let entOk = 0, entPend = 0;
+  for (const v of Object.values(S.ventas)) {
+    if (v.estado !== 'activa') continue;
+    const n = asientosDe(v).length, pend = v.tipo !== 'cortesia' && v.pago && v.pago.estado === 'pendiente';
+    const kv = v.vendedor || 'Sin registrar';
+    if (!vend[kv]) vend[kv] = { ventas: 0, entradas: 0, cobrado: 0, porCobrar: 0 };
+    vend[kv].ventas++; vend[kv].entradas += n; vend[kv][pend ? 'porCobrar' : 'cobrado'] += Number(v.total) || 0;
+    if (v.tipo !== 'cortesia') {
+      const km = (v.pago && v.pago.medio) || 'Sin registrar';
+      if (!medio[km]) medio[km] = { entradas: 0, cobrado: 0, porCobrar: 0 };
+      medio[km].entradas += n; medio[km][pend ? 'porCobrar' : 'cobrado'] += Number(v.total) || 0;
+    }
+    if (v.entrega && v.entrega.hecha) entOk += n; else entPend += n;
+    canal[v.canal === 'presencial' ? 'presencial' : 'app'] += n;
+  }
+  return { sec, tot, vend, medio, canal, entOk, entPend };
+}
+
+/* =====================================================================
+   6. OPERACIONES (cada una deja su línea en el historial)
+   ===================================================================== */
+function linea(accion, extra) {
+  return ['historial/' + almacen.nuevoId(), Object.assign({ ts: Date.now(), uid: U.uid, por: U.nombre, accion }, extra)];
+}
+function soltar(cur, ids, idVenta) {
+  for (const s of ids) if (cur[s] && cur[s].v === idVenta) { if (cur[s].p) cur[s] = { p: cur[s].p }; else delete cur[s]; }
+}
+
+async function crearVenta(d) {
+  const id = almacen.nuevoId(), ids = ordenar(d.asientos), deCupo = !!d.deCupo;
+  const ok = await almacen.txAsientos(cur => {
+    for (const s of ids) { const r = cur[s]; if (deCupo ? (!r || r.v || !r.p) : !!r) return; }
+    for (const s of ids) cur[s] = deCupo ? { v: id, p: cur[s].p } : { v: id };
+    return cur;
+  });
+  if (!ok) throw new Error('Una o más butacas ya no están disponibles. Revisa el mapa y elige de nuevo.');
+  try {
+    const num = await almacen.siguienteNum(), ahora = Date.now();
+    const { precios, total } = calcularPrecios(ids, d.tipo, d.precioEsp);
+    const cort = d.tipo === 'cortesia';
+    const venta = {
+      num, codigo: 'V-' + String(num).padStart(4, '0'), estado: 'activa', canal: deCupo ? 'presencial' : 'app', bloqueo: deCupo ? (d.bloqueo || '') : '',
+      tipo: d.tipo, asientos: ids, precios, total,
+      comprador: { nombre: d.nombre, doc: d.doc || '', tel: d.tel || '' },
+      pago: cort ? { medio: 'No aplica', estado: 'pagado', nroOp: '', fecha: null }
+                 : { medio: d.medio, estado: d.pagoEstado, nroOp: d.nroOp || '', fecha: d.pagoEstado === 'pagado' ? (d.pagoFecha === undefined ? ahora : d.pagoFecha) : null },
+      entrega: { modalidad: d.modalidad, hecha: !!d.entregada, fecha: d.entregada ? ahora : null, por: d.entregada ? U.nombre : '' },
+      vendedor: d.vendedor || U.nombre, registradoPor: { uid: U.uid, nombre: U.nombre },
+      obs: d.obs || '', creado: ahora, modificado: ahora
+    };
+    const [hk, hv] = linea('Venta registrada', { venta: id, codigo: venta.codigo, detalle: entradas(ids.length) + ', ' + sol(total) + '. ' + resumenAsientos(ids) });
+    await almacen.actualizar({ ['ventas/' + id]: venta, [hk]: hv });
+    return id;
+  } catch (e) {
+    await almacen.txAsientos(cur => { soltar(cur, ids, id); return cur; });
+    throw e;
+  }
+}
+
+const CAMPOS = [
+  ['comprador.nombre', 'Comprador'], ['comprador.doc', 'DNI'], ['comprador.tel', 'Teléfono'],
+  ['tipo', 'Tipo de entrada', v => TIPOS[v] || v], ['total', 'Total', sol],
+  ['pago.medio', 'Medio de pago'], ['pago.estado', 'Pago', v => v === 'pendiente' ? 'Pendiente' : 'Pagado'], ['pago.nroOp', 'N.º de operación'],
+  ['entrega.modalidad', 'Modalidad de entrega'], ['entrega.hecha', 'Entrega', v => v ? 'Realizada' : 'Pendiente'],
+  ['vendedor', 'Vendedor'], ['obs', 'Observaciones']
+];
+async function guardarVenta(id, nueva, accion) {
+  const antes = S.ventas[id], cambios = [];
+  for (const [ruta, nombre, fmt] of CAMPOS) {
+    const a = leer(antes, ruta), d = leer(nueva, ruta);
+    if (String(a == null ? '' : a) !== String(d == null ? '' : d))
+      cambios.push({ campo: nombre, antes: fmt ? fmt(a) : String(a == null ? '' : a), despues: fmt ? fmt(d) : String(d == null ? '' : d) });
+  }
+  if (!cambios.length) return 'igual';
+  const ahora = Date.now();
+  if (nueva.pago.estado === 'pagado' && antes.pago && antes.pago.estado === 'pendiente') nueva.pago.fecha = ahora;
+  if (nueva.pago.estado === 'pendiente') nueva.pago.fecha = null;
+  if (nueva.entrega.hecha && !(antes.entrega && antes.entrega.hecha)) { nueva.entrega.fecha = ahora; nueva.entrega.por = U.nombre; }
+  if (!nueva.entrega.hecha) { nueva.entrega.fecha = null; nueva.entrega.por = ''; }
+  nueva.modificado = ahora;
+  const [hk, hv] = linea(accion || 'Venta modificada', { venta: id, codigo: nueva.codigo, cambios });
+  await almacen.actualizar({ ['ventas/' + id]: nueva, [hk]: hv });
+  return 'ok';
+}
+async function anularVenta(id, motivo) {
+  const v = S.ventas[id], ids = asientosDe(v);
+  const deBloq = ids.filter(x => S.asientos[x] && S.asientos[x].p).length;
+  await almacen.txAsientos(cur => { soltar(cur, ids, id); return cur; });
+  const nueva = copia(v); nueva.estado = 'anulada'; nueva.modificado = Date.now();
+  nueva.anulacion = { ts: Date.now(), por: U.nombre, motivo };
+  const [hk, hv] = linea('Venta anulada', { venta: id, codigo: v.codigo, detalle: 'Motivo: ' + motivo + '. ' + butacas(ids.length) + (ids.length === 1 ? ' liberada' : ' liberadas') + (deBloq ? ' (' + deBloq + (deBloq === 1 ? ' vuelve a quedar bloqueada)' : ' vuelven a quedar bloqueadas)') : '') + '.' });
+  await almacen.actualizar({ ['ventas/' + id]: nueva, [hk]: hv });
+}
+async function cambiarAsientos(id, nuevos) {
+  const v = S.ventas[id], viejos = asientosDe(v); nuevos = ordenar(nuevos);
+  const ok = await almacen.txAsientos(cur => {
+    soltar(cur, viejos, id);
+    for (const s of nuevos) { const r = cur[s]; if (r && r.v) return; }
+    for (const s of nuevos) cur[s] = (cur[s] && cur[s].p) ? { v: id, p: cur[s].p } : { v: id };
+    return cur;
+  });
+  if (!ok) throw new Error('Alguna de las butacas nuevas ya no está disponible. No se cambió nada.');
+  const nueva = copia(v);
+  const esp = v.tipo === 'especial' ? Object.values(v.precios || {})[0] : 0;
+  const c = calcularPrecios(nuevos, v.tipo, esp);
+  nueva.asientos = nuevos; nueva.precios = c.precios; nueva.total = c.total; nueva.modificado = Date.now();
+  const cambios = [{ campo: 'Butacas', antes: resumenAsientos(viejos), despues: resumenAsientos(nuevos) }];
+  if (c.total !== v.total) cambios.push({ campo: 'Total', antes: sol(v.total), despues: sol(c.total) });
+  const [hk, hv] = linea('Cambio de butacas', { venta: id, codigo: v.codigo, cambios });
+  await almacen.actualizar({ ['ventas/' + id]: nueva, [hk]: hv });
+}
+async function bloquear(ids, motivo) {
+  ids = ordenar(ids);
+  const lote = almacen.nuevoId();
+  const ok = await almacen.txAsientos(cur => { for (const s of ids) if (cur[s]) return; for (const s of ids) cur[s] = { p: lote }; return cur; });
+  if (!ok) throw new Error('Alguna butaca ya no está libre. No se bloqueó ninguna.');
+  const [hk, hv] = linea('Butacas bloqueadas', { detalle: 'Motivo: ' + motivo + '. ' + butacas(ids.length) + '. ' + resumenAsientos(ids) });
+  await almacen.actualizar({ ['bloqueos/' + lote]: { motivo, por: U.nombre, uid: U.uid, ts: Date.now() }, [hk]: hv });
+}
+async function liberar(ids) {
+  ids = ordenar(ids);
+  const motivos = [...new Set(ids.map(motivoDe))].join(', ');
+  let vacios = [];
+  const ok = await almacen.txAsientos(cur => {
+    for (const s of ids) if (!cur[s] || cur[s].v || !cur[s].p) return;
+    const tocados = new Set(ids.map(s => cur[s].p));
+    for (const s of ids) delete cur[s];
+    const vivos = new Set(Object.values(cur).map(r => r.p).filter(Boolean));
+    vacios = [...tocados].filter(l => !vivos.has(l));
+    return cur;
+  });
+  if (!ok) throw new Error('Alguna butaca ya se vendió o ya no está bloqueada. No se desbloqueó ninguna.');
+  const [hk, hv] = linea('Butacas desbloqueadas', { detalle: 'Estaban bloqueadas por: ' + motivos + '. ' + butacas(ids.length) + '. ' + resumenAsientos(ids) });
+  const cambios = { [hk]: hv };
+  for (const l of vacios) cambios['bloqueos/' + l] = null;   // tanda sin butacas: se retira del registro vigente
+  await almacen.actualizar(cambios);
+}
+// Registro vigente de bloqueos: una entrada por tanda, con sus butacas sin vender y vendidas.
+function tandas() {
+  const m = {};
+  for (const a of LISTA) {
+    const r = S.asientos[a.id];
+    if (!r || !r.p) continue;
+    const k = String(r.p);
+    if (!m[k]) m[k] = { id: k, libres: [], vendidas: [] };
+    m[k][r.v ? 'vendidas' : 'libres'].push(a.id);
+  }
+  return Object.values(m).map(t => Object.assign({ motivo: 'Sin motivo', por: '', ts: 0 }, S.bloqueos[t.id] || {}, t)).sort((a, b) => b.ts - a.ts);
+}
+
+/* =====================================================================
+   7. INTERFAZ: estructura
+   ===================================================================== */
+function montar() {
+  $('#app').innerHTML = `
+  <header class="cab">
+    <div class="cab-in">
+      <div><h1>${esc(EVENTO.nombre)}</h1><div class="sub">${esc(EVENTO.subtitulo)}</div><p>${esc(EVENTO.lugar)}, ${esc(EVENTO.fecha)}</p></div>
+      <div class="cab-der"><span class="chip" id="chipModo"></span><button type="button" class="chip" id="chipUsr" data-a="tab" data-v="gestion"></button></div>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Secciones">
+      <button type="button" data-a="tab" data-v="mapa">Mapa</button>
+      <button type="button" data-a="tab" data-v="ventas">Ventas</button>
+      <button type="button" data-a="tab" data-v="resumen">Resumen</button>
+      <button type="button" data-a="tab" data-v="gestion">Gestión</button>
+    </nav>
+  </header>
+  <div class="ocu"><div class="ocu-in"><div class="ocu-bar" id="ocuBar"></div><ul class="ley" id="ley"></ul></div></div>
+  <main>
+    <section id="t-mapa">
+      <div class="mbarra">
+        <div class="modo" id="modo" role="group" aria-label="Qué hacer al tocar una butaca"><button type="button" data-a="modo" data-v="vender">Vender</button><button type="button" data-a="modo" data-v="bloquear">Bloquear</button></div>
+        <button type="button" class="btn mini" id="btnZoom" data-a="zoom"></button>
+        <span class="ira">Ir a <button type="button" class="sC" data-a="ir" data-v="C">C</button><button type="button" class="sB" data-a="ir" data-v="B">B</button><button type="button" class="sA" data-a="ir" data-v="A">A</button></span>
+      </div>
+      <p class="aviso" id="avisoMapa" hidden></p>
+      <div class="mscroll" id="mscroll"><div class="mapa" id="mapa"></div></div>
+    </section>
+    <section id="t-ventas" class="pad" hidden>
+      <div class="busca"><input type="search" id="q" placeholder="Buscar por nombre, DNI, teléfono, código o butaca" aria-label="Buscar ventas"></div>
+      <div class="filtros" id="filtros"></div>
+      <div id="listaVentas"></div>
+    </section>
+    <section id="t-resumen" class="pad" hidden></section>
+    <section id="t-gestion" class="pad" hidden></section>
+  </main>
+  <div class="selbar" id="selbar" hidden></div>`;
+  construirMapa();
+  $('#q').addEventListener('input', e => { UI.q = e.target.value; pintarVentas(); });
+  window.addEventListener('resize', ajustarZoom);
+  pintar();
+}
+function construirMapa() {
+  let h = '';
+  for (const blq of PLANO) {
+    const sc = SECTORES[blq.sector];
+    h += `<div class="sec-tit s${blq.sector}" id="sec-${blq.sector}"><b>${sc.nombre}</b><span>${sc.zona}</span><em>${sol(sc.precio)}</em></div>`;
+    for (const f of blq.filas) {
+      if (!f) { h += '<div class="sep"></div>'; continue; }
+      let c = '';
+      for (const [col, n0, cant] of f[1]) for (let i = 0; i < cant; i++)
+        c += `<button type="button" class="b s${blq.sector}" style="grid-column:${col + i + blq.off + 1}" data-id="${blq.sector}-${f[0]}-${n0 + i}">${n0 + i}</button>`;
+      h += `<div class="fila"><button type="button" class="fl" style="grid-column:1" data-fila="${blq.sector}|${f[0]}" aria-label="Fila ${f[0]} completa">${f[0]}</button>${c}<button type="button" class="fl" style="grid-column:27" data-fila="${blq.sector}|${f[0]}" aria-label="Fila ${f[0]} completa">${f[0]}</button></div>`;
+    }
+  }
+  h += '<div class="fila"><div class="esc foso">Foso</div></div><div class="fila"><div class="esc tabl">Escenario</div></div>';
+  const m = $('#mapa'); m.innerHTML = h;
+  // En vista completa las butacas son muy pequeñas para tocarlas: el toque acerca la zona.
+  $('#mscroll').addEventListener('click', e => {
+    if (m.classList.contains('mini')) {
+      let mejor = null, dist = 1e9;
+      for (const b of $$('.b', m)) { const r = b.getBoundingClientRect(); const d = Math.hypot(r.left + r.width / 2 - e.clientX, r.top + r.height / 2 - e.clientY); if (d < dist) { dist = d; mejor = b; } }
+      acercar(mejor); return;
+    }
+    const b = e.target.closest('.b');
+    if (b) { tocarButaca(b.dataset.id); return; }
+    const fl = e.target.closest('.fl');
+    if (fl) tocarFila.apply(null, fl.dataset.fila.split('|'));
+  });
+}
+function ajustarZoom() {
+  const m = $('#mapa'), cont = $('#mscroll');
+  if (!m || !cont || !cont.clientWidth) return;
+  const cw = cont.clientWidth - 16;
+  let s, g, lab;
+  if (UI.zoom === 'cerca') { s = 32; g = 3; lab = 30; }
+  else {
+    g = cw < 760 ? 1 : 3; lab = cw < 760 ? 20 : 30;
+    s = Math.max(8, Math.min(34, Math.floor((cw - 2 * lab - 26 * g) / 25)));
+  }
+  m.style.setProperty('--s', s + 'px'); m.style.setProperty('--g', g + 'px'); m.style.setProperty('--lab', lab + 'px');
+  const mini = s < 22;
+  m.classList.toggle('mini', mini);
+  const cabe = UI.zoom === 'todo' && !mini;
+  $('#btnZoom').hidden = cabe;
+  $('#btnZoom').textContent = UI.zoom === 'cerca' ? 'Ver todo el teatro' : 'Acercar';
+  pintarAviso();
+}
+function pintarAviso() {
+  const av = $('#avisoMapa'), mini = $('#mapa').classList.contains('mini'), bloq = UI.modo === 'bloquear' && !UI.reubicar;
+  let t = '';
+  if (UI.reubicar) { const v = S.ventas[UI.reubicar]; t = 'Cambio de butacas de la venta ' + (v ? v.codigo : '') + '. Marca las butacas que deben quedar y guarda el cambio.'; }
+  else if (mini) t = bloq ? 'Modo bloqueo, vista completa. Toca una zona del plano para acercarla.' : 'Vista completa. Toca una zona del plano para acercarla y elegir butacas.';
+  else if (bloq) t = 'Modo bloqueo. Toca las butacas libres que quieres bloquear, o las bloqueadas (rayadas) para desbloquearlas o venderlas. La letra de la fila elige la fila completa.';
+  av.hidden = !t; av.textContent = t; av.classList.toggle('bloq', bloq);
+  $('#modo').hidden = !!UI.reubicar;
+  for (const b of $$('#modo button')) b.setAttribute('aria-pressed', String(b.dataset.v === UI.modo));
+  $('#t-mapa').classList.toggle('modo-bloq', bloq);
+}
+function acercar(el) {
+  UI.zoom = 'cerca'; ajustarZoom();
+  if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center', inline: 'center' });
+}
+
+/* =====================================================================
+   8. INTERFAZ: pintado
+   ===================================================================== */
+let pendiente = false;
+function programar() { if (pendiente) return; pendiente = true; requestAnimationFrame(() => { pendiente = false; pintar(); }); }
+function pintar() {
+  if (!U || !$('#mapa')) return;
+  const st = estadisticas();
+  pintarChips(); pintarOcupacion(st);
+  for (const t of ['mapa', 'ventas', 'resumen', 'gestion']) $('#t-' + t).hidden = UI.tab !== t;
+  for (const b of $$('#tabs button')) { if (b.dataset.v === UI.tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); }
+  pintarMapa(); pintarSeleccion();
+  if (UI.tab === 'mapa') ajustarZoom();
+  if (UI.tab === 'ventas') pintarVentas();
+  if (UI.tab === 'resumen') pintarResumen(st);
+  if (UI.tab === 'gestion') pintarGestion(st);
+  if (UI.modal && UI.modal.tipo === 'detalle') pintarModal();
+}
+function pintarChips() {
+  const c = $('#chipModo'); if (!c || !almacen) return;
+  if (almacen.modo === 'demo') { c.className = 'chip demo'; c.textContent = 'Demo: no se guarda'; }
+  else { c.className = 'chip ' + (EN_LINEA ? 'ok' : 'off'); c.textContent = EN_LINEA ? 'En línea' : 'Sin conexión'; }
+  if (U) $('#chipUsr').textContent = U.nombre;
+}
+function pintarOcupacion(st) {
+  const t = st.tot;
+  const seg = [['vendido', t.vendidas, 'Vendidas'], ['reservado', t.reservadas, 'Pago pendiente'], ['cortesia', t.cortesias, 'Cortesías'], ['cupo', t.cupoLibre, 'Bloqueadas'], ['libre', t.libres, 'Disponibles']];
+  $('#ocuBar').innerHTML = seg.filter(x => x[0] !== 'libre' && x[1]).map(([c, n]) => `<i class="o-${c}" style="width:${n / TOTAL * 100}%"></i>`).join('');
+  $('#ley').innerHTML = seg.map(([c, n, nom]) => `<li><span class="pt o-${c}"></span>${nom} <b>${n}</b></li>`).join('');
+}
+function pintarMapa() {
+  const propia = UI.reubicar;
+  for (const b of $$('#mapa .b')) {
+    const id = b.dataset.id, a = ASIENTOS[id], e = estadoAsiento(id);
+    let est = e.e;
+    if (propia && e.vid === propia) est = 'libre';
+    b.className = 'b s' + a.sector + ' e-' + est + (UI.sel.has(id) ? ' sel' : '');
+    const quien = e.venta && e.venta.comprador ? ' (' + e.venta.comprador.nombre + ')' : '';
+    b.title = 'Sector ' + a.sector + ', fila ' + a.fila + ', butaca ' + a.num + ': ' +
+      ({ libre: 'disponible, ' + sol(a.precio), cupo: 'bloqueada (' + motivoDe(id) + ')', vendido: 'vendida' + quien, reservado: 'pago pendiente' + quien, cortesia: 'cortesía' + quien }[est]);
+  }
+}
+function pintarSeleccion() {
+  const bar = $('#selbar'), n = UI.sel.size;
+  const ver = UI.tab === 'mapa' && (n > 0 || !!UI.reubicar);
+  document.body.classList.toggle('con-sel', ver);
+  if (!ver) { bar.hidden = true; return; }
+  bar.hidden = false;
+  const ids = [...UI.sel];
+  let txt, acc;
+  if (UI.reubicar) {
+    const v = S.ventas[UI.reubicar] || {};
+    const c = calcularPrecios(ids, v.tipo, v.tipo === 'especial' ? Object.values(v.precios || {})[0] : 0);
+    txt = `<b>${butacas(n)} para ${esc(v.codigo || '')}, ${sol(c.total)}</b>${n ? esc(resumenAsientos(ids)) : 'Elige al menos una butaca.'}`;
+    acc = `<button type="button" class="btn" data-a="cancelarReubicar">Cancelar</button><button type="button" class="btn pri" data-a="guardarReubicar" ${n ? '' : 'disabled'}>Guardar cambio</button>`;
+  } else {
+    const total = ids.reduce((s, id) => s + ASIENTOS[id].precio, 0);
+    acc = `<button type="button" class="btn" data-a="limpiarSel">Quitar</button>`;
+    if (UI.selTipo === 'cupo') {
+      txt = `<b>${butacas(n)} ${n === 1 ? 'bloqueada' : 'bloqueadas'}</b>${esc(resumenAsientos(ids))}`;
+      acc += `<button type="button" class="btn" data-a="abrirVenta">Vender</button><button type="button" class="btn pri" data-a="desbloquearSel">Desbloquear</button>`;
+    } else if (UI.modo === 'bloquear') {
+      txt = `<b>${butacas(n)} para bloquear</b>${esc(resumenAsientos(ids))}`;
+      acc += `<button type="button" class="btn pri" data-a="abrirBloqueo">Bloquear ${butacas(n)}</button>`;
+    } else {
+      txt = `<b>${butacas(n)}, ${sol(total)}</b>${esc(resumenAsientos(ids))}`;
+      acc += `<button type="button" class="btn pri" data-a="abrirVenta">Registrar venta</button>`;
+    }
+  }
+  bar.innerHTML = `<div class="selbar-in"><div class="txt">${txt}</div><div class="acc">${acc}</div></div>`;
+}
+
+const FILTROS = [['activas', 'Todas'], ['pago', 'Pago pendiente'], ['entrega', 'Entrega pendiente'], ['cortesia', 'Cortesías'], ['presencial', 'De bloqueo'], ['anuladas', 'Anuladas']];
+function etiquetas(v) {
+  if (v.estado === 'anulada') return '<span class="et mal">Anulada</span>';
+  let h = '';
+  if (v.tipo === 'cortesia') h += '<span class="et cort">Cortesía</span>';
+  else h += v.pago && v.pago.estado === 'pendiente' ? '<span class="et pend">Pago pendiente</span>' : '<span class="et ok">Pagada</span>';
+  h += v.entrega && v.entrega.hecha ? '<span class="et ok">Entregada</span>' : '<span class="et pend">Entrega pendiente</span>';
+  if (v.canal === 'presencial') h += '<span class="et cupo">De bloqueo</span>';
+  return h;
+}
+function pintarVentas() {
+  $('#filtros').innerHTML = FILTROS.map(([k, n]) => `<button type="button" data-a="filtro" data-v="${k}" aria-pressed="${UI.filtro === k}">${n}</button>`).join('');
+  const q = UI.q.trim().toLowerCase();
+  const lista = Object.entries(S.ventas).filter(([id, v]) => {
+    const act = v.estado === 'activa';
+    if (UI.filtro === 'anuladas' ? act : !act) return false;
+    if (UI.filtro === 'pago' && !(v.tipo !== 'cortesia' && v.pago && v.pago.estado === 'pendiente')) return false;
+    if (UI.filtro === 'entrega' && v.entrega && v.entrega.hecha) return false;
+    if (UI.filtro === 'cortesia' && v.tipo !== 'cortesia') return false;
+    if (UI.filtro === 'presencial' && v.canal !== 'presencial') return false;
+    if (!q) return true;
+    const c = v.comprador || {};
+    return [v.codigo, c.nombre, c.doc, c.tel, v.vendedor, asientosDe(v).join(' '), resumenAsientos(asientosDe(v))].join(' ').toLowerCase().includes(q);
+  }).sort((a, b) => (b[1].num || 0) - (a[1].num || 0));
+  $('#listaVentas').innerHTML = lista.length ? lista.map(([id, v]) => {
+    const ids = asientosDe(v), cls = v.estado !== 'activa' ? 'anul' : v.tipo === 'cortesia' ? 'cort' : (v.pago && v.pago.estado === 'pendiente') ? 'pend' : '';
+    return `<button type="button" class="venta ${cls}" data-a="detalle" data-v="${esc(id)}">
+      <div class="l1"><span class="cod">${esc(v.codigo)}</span>${etiquetas(v)}</div>
+      <div class="nom">${esc((v.comprador || {}).nombre)}</div>
+      <div class="det">${entradas(ids.length)}, ${sol(v.total)}. ${esc(resumenAsientos(ids))}</div>
+      <div class="det">Vendió ${esc(v.vendedor)}${v.tipo !== 'cortesia' && v.pago ? ', ' + esc(v.pago.medio) : ''}</div>
+    </button>`;
+  }).join('') : `<p class="vacio">${q || UI.filtro !== 'activas' ? 'Ninguna venta coincide con la búsqueda o el filtro.' : 'Todavía no hay ventas. Elige butacas en el mapa para registrar la primera.'}</p>`;
+}
+
+function pintarResumen(st) {
+  const t = st.tot, potencial = LISTA.reduce((s, a) => s + a.precio, 0);
+  const filaSec = (k, o) => `<tr><td>${k}</td><td>${o.total}</td><td>${o.vendidas}</td><td>${o.reservadas}</td><td>${o.cortesias}</td><td>${o.cupoLibre}</td><td>${o.libres}</td><td>${sol(o.cobrado)}</td></tr>`;
+  const tabla = (obj, cab, fila) => {
+    const ks = Object.keys(obj).sort((a, b) => obj[b].entradas - obj[a].entradas);
+    return ks.length ? `<div class="tw"><table><thead><tr>${cab.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${ks.map(k => fila(k, obj[k])).join('')}</tbody></table></div>` : '<p class="nota">Sin ventas todavía.</p>';
+  };
+  $('#t-resumen').innerHTML = `
+  <div class="caja"><h2>Recaudación</h2>
+    <div class="cifras">
+      <div><strong>${sol(t.cobrado)}</strong>cobrado</div>
+      <div><strong>${sol(t.porCobrar)}</strong>por cobrar</div>
+      <div><strong>${sol(potencial)}</strong>si se vende todo a precio de lista</div>
+    </div>
+  </div>
+  <div class="caja"><h2>Ocupación por sector</h2>
+    <div class="tw"><table><thead><tr><th>Sector</th><th>Butacas</th><th>Vendidas</th><th>Pago pend.</th><th>Cortesías</th><th>Bloqueadas</th><th>Disponibles</th><th>Cobrado</th></tr></thead>
+    <tbody>${['A', 'B', 'C'].map(k => filaSec(SECTORES[k].nombre + ' (' + sol(SECTORES[k].precio) + ')', st.sec[k])).join('')}</tbody>
+    <tfoot>${filaSec('Total', t)}</tfoot></table></div>
+  </div>
+  <div class="caja"><h2>Por vendedor</h2>${tabla(st.vend, ['Vendedor', 'Ventas', 'Entradas', 'Cobrado', 'Por cobrar'], (k, o) => `<tr><td>${esc(k)}</td><td>${o.ventas}</td><td>${o.entradas}</td><td>${sol(o.cobrado)}</td><td>${sol(o.porCobrar)}</td></tr>`)}</div>
+  <div class="caja"><h2>Por medio de pago</h2>${tabla(st.medio, ['Medio', 'Entradas', 'Cobrado', 'Por cobrar'], (k, o) => `<tr><td>${esc(k)}</td><td>${o.entradas}</td><td>${sol(o.cobrado)}</td><td>${sol(o.porCobrar)}</td></tr>`)}</div>
+  <div class="caja"><h2>Entrega y canal</h2>
+    <div class="cifras">
+      <div><strong>${st.entOk}</strong>entradas entregadas</div>
+      <div><strong>${st.entPend}</strong>por entregar</div>
+      <div><strong>${st.canal.app}</strong>de la venta general</div>
+      <div><strong>${st.canal.presencial}</strong>vendidas de butacas bloqueadas</div>
+    </div>
+  </div>
+  <div class="caja"><h2>Exportar</h2>
+    <p class="nota">Archivos CSV que se abren en Excel. El de butacas tiene las mismas columnas del Excel de control, más los datos nuevos.</p>
+    <div class="accs"><button type="button" class="btn" data-a="exportarButacas">Descargar butacas y ventas</button><button type="button" class="btn" data-a="exportarHistorial">Descargar historial</button></div>
+  </div>`;
+}
+
+function lineaHist(h, conCodigo) {
+  const cmb = (h.cambios || []).map(c => `<span class="cmb">${esc(c.campo)}: <del>${esc(c.antes || 'vacío')}</del> pasa a <ins>${esc(c.despues || 'vacío')}</ins></span>`).join('');
+  return `<li><time>${fch(h.ts)}, ${esc(h.por)}</time>${esc(h.accion)}${conCodigo && h.codigo ? ' ' + esc(h.codigo) : ''}${h.detalle ? `<span class="cmb">${esc(h.detalle)}</span>` : ''}${cmb}</li>`;
+}
+function pintarGestion(st) {
+  const ts = tandas();
+  const hist = Object.values(S.historial).sort((a, b) => b.ts - a.ts).slice(0, 150);
+  const eq = Object.entries(S.usuarios);
+  $('#t-gestion').innerHTML = `
+  <div class="caja"><h2>Butacas bloqueadas</h2>
+    <p class="nota">Una butaca bloqueada queda fuera de la venta general y se ve rayada en el mapa. Se bloquea en el mapa, tocando las butacas, y cada tanda queda aquí con su motivo, quién la bloqueó y cuándo.</p>
+    <div class="cifras">
+      <div><strong>${st.tot.cupoTotal}</strong>bloqueadas en total</div>
+      <div><strong>${st.tot.cupoLibre}</strong>sin vender</div>
+      <div><strong>${st.tot.cupoTotal - st.tot.cupoLibre}</strong>ya vendidas</div>
+    </div>
+    <div class="accs"><button type="button" class="btn pri" data-a="irBloquear">Bloquear butacas en el mapa</button></div>
+    ${ts.map(t => `<div class="tanda">
+      <b>${esc(t.motivo)}</b>
+      <div class="det">${butacas(t.libres.length + t.vendidas.length)}: ${t.libres.length} sin vender, ${t.vendidas.length} ${t.vendidas.length === 1 ? 'vendida' : 'vendidas'}</div>
+      <div class="det">${esc(resumenAsientos([...t.libres, ...t.vendidas]))}</div>
+      <div class="det">${t.por ? 'Bloqueó ' + esc(t.por) + (t.ts ? ' el ' + fch(t.ts) : '') : ''}</div>
+      <div class="accs"><button type="button" class="btn mini" data-a="verTanda" data-v="${esc(t.id)}">Ver en el mapa</button>${t.libres.length ? `<button type="button" class="btn mini" data-a="liberarTanda" data-v="${esc(t.id)}">Desbloquear las ${t.libres.length} sin vender</button>` : ''}</div>
+    </div>`).join('')}
+  </div>
+  <div class="caja"><h2>Sesión</h2>
+    <p>Estás como <b>${esc(U.nombre)}</b>. Ese nombre queda en el historial de todo lo que registres o cambies.</p>
+    ${almacen.modo === 'demo'
+      ? `<p class="nota">Modo demo: los datos se pierden al cerrar o recargar la página.</p>
+         <div class="accs"><button type="button" class="btn" data-a="cambiarUsuario">Cambiar nombre</button><button type="button" class="btn pel" data-a="reiniciarDemo">Reiniciar datos de prueba</button></div>`
+      : `<div class="accs"><button type="button" class="btn" data-a="salir">Cerrar sesión</button></div>`}
+    ${almacen.modo === 'firebase' && eq.length ? `<h3>Equipo</h3><p class="nota">${eq.map(([uid, p]) => esc(p.nombre)).join(', ')}</p>` : ''}
+  </div>
+  <div class="caja"><h2>Historial</h2>
+    ${hist.length ? `<ul class="hist">${hist.map(h => lineaHist(h, true)).join('')}</ul>` : '<p class="nota">Aquí aparece cada venta, cambio, anulación y bloqueo, con fecha y responsable.</p>'}
+  </div>`;
+}
+
+/* =====================================================================
+   9. INTERFAZ: hojas (venta, detalle, anulación, confirmación)
+   ===================================================================== */
+function abrir(modal) { UI.modal = modal; pintarModal(); }
+function cerrar() { UI.modal = null; $('#modal').innerHTML = ''; }
+function pintarModal() {
+  const m = UI.modal; if (!m) return;
+  let h = '';
+  if (m.tipo === 'venta') h = hojaVenta(null, m);
+  else if (m.tipo === 'editar') h = hojaVenta(S.ventas[m.id], m);
+  else if (m.tipo === 'detalle') { if (!S.ventas[m.id]) return cerrar(); h = hojaDetalle(m.id); }
+  else if (m.tipo === 'anular') h = hojaAnular(m.id);
+  else if (m.tipo === 'confirmar') h = hojaConfirmar(m);
+  else if (m.tipo === 'usuario') h = hojaUsuario();
+  else if (m.tipo === 'bloquear') h = hojaBloquear(m);
+  else if (m.tipo === 'texto') h = hojaTexto(m);
+  const cuerpo = $('#modal .hoja-cuerpo'), y = cuerpo ? cuerpo.scrollTop : 0;
+  $('#modal').innerHTML = `<div class="velo" data-velo><div class="hoja" role="dialog" aria-modal="true">${h}</div></div>`;
+  if (m.tipo === 'detalle' && y) $('#modal .hoja-cuerpo').scrollTop = y;
+  if (m.tipo === 'venta' || m.tipo === 'editar') actualizarFormVenta($('#modal form'));
+}
+const opcion = (nombre, valor, texto, marcado) => `<label><input type="radio" name="${nombre}" value="${valor}" ${marcado ? 'checked' : ''}><span>${texto}</span></label>`;
+function hojaVenta(v, m) {
+  const ed = !!v, ids = ed ? asientosDe(v) : m.ids;
+  const c = (v && v.comprador) || {}, p = (v && v.pago) || {}, en = (v && v.entrega) || {};
+  const tipo = ed ? v.tipo : 'general', esp = ed && v.tipo === 'especial' ? Object.values(v.precios || {})[0] : '';
+  const medios = MEDIOS.includes(p.medio) || !p.medio || p.medio === 'No aplica' ? MEDIOS : [p.medio, ...MEDIOS];
+  const mods = MODALIDADES.includes(en.modalidad) || !en.modalidad ? MODALIDADES : [en.modalidad, ...MODALIDADES];
+  const vendedores = [...new Set([U.nombre, ...Object.values(S.usuarios).map(u => u.nombre), ...Object.values(S.ventas).map(x => x.vendedor)].filter(Boolean))];
+  return `<form data-f="${ed ? 'editar' : 'venta'}" novalidate>
+    <header class="hoja-cab"><h2>${ed ? 'Editar venta ' + esc(v.codigo) : m.deCupo ? 'Vender butacas bloqueadas' : 'Registrar venta'}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
+    <div class="hoja-cuerpo">
+      <p class="res-but"><b>${entradas(ids.length)}</b>${esc(resumenAsientos(ids))}</p>
+      <fieldset><legend>Tipo de entrada</legend>
+        <div class="ops">${Object.entries(TIPOS).map(([k, n]) => opcion('tipo', k, n, tipo === k)).join('')}</div>
+        <label class="campo" data-solo="especial">Precio por entrada (S/)<input type="number" name="precioEsp" min="0" step="0.5" inputmode="decimal" value="${esc(esp)}"></label>
+        <p class="total">Total <output></output></p>
+      </fieldset>
+      <fieldset><legend>Comprador</legend>
+        <label class="campo">Nombre y apellidos<input type="text" name="nombre" autocomplete="off" required value="${esc(c.nombre)}"></label>
+        <div class="dos">
+          <label class="campo">DNI u otro documento<input type="text" name="doc" inputmode="numeric" autocomplete="off" value="${esc(c.doc)}"></label>
+          <label class="campo">Teléfono o WhatsApp<input type="tel" name="tel" autocomplete="off" value="${esc(c.tel)}"></label>
+        </div>
+      </fieldset>
+      <fieldset data-oculto="cortesia"><legend>Pago</legend>
+        <div class="ops">${opcion('pagoEstado', 'pagado', 'Pagado', p.estado !== 'pendiente')}${opcion('pagoEstado', 'pendiente', 'Pendiente (separa las butacas)', p.estado === 'pendiente')}</div>
+        <div class="dos">
+          <label class="campo">Medio de pago<select name="medio">${medios.map(x => `<option ${p.medio === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
+          <label class="campo">N.º de operación (opcional)<input type="text" name="nroOp" autocomplete="off" value="${esc(p.nroOp)}"></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Entrega</legend>
+        <label class="campo">Modalidad<select name="modalidad">${mods.map(x => `<option ${en.modalidad === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
+        <label class="chk"><input type="checkbox" name="entregada" ${en.hecha ? 'checked' : ''}>Las entradas ya se entregaron</label>
+      </fieldset>
+      <fieldset><legend>Responsable</legend>
+        <label class="campo">Vendedor<input type="text" name="vendedor" list="dlVend" autocomplete="off" required value="${esc(ed ? v.vendedor : U.nombre)}"></label>
+        <datalist id="dlVend">${vendedores.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+        <label class="campo">Observaciones<textarea name="obs">${esc(v ? v.obs : '')}</textarea></label>
+        <p class="nota">Además del vendedor, el historial guarda quién registró cada cambio (${esc(U.nombre)}).</p>
+      </fieldset>
+      <p class="err" hidden></p>
+    </div>
+    <footer class="hoja-pie"><button type="button" class="btn" data-a="${ed ? 'volverDetalle' : 'cerrar'}">Cancelar</button><button type="button" class="btn pri" data-a="enviar">${ed ? 'Guardar cambios' : 'Registrar venta'}</button></footer>
+  </form>`;
+}
+function actualizarFormVenta(f) {
+  if (!f) return;
+  const m = UI.modal, ids = m.tipo === 'editar' ? asientosDe(S.ventas[m.id]) : m.ids;
+  const tipo = f.elements.tipo.value;
+  $('[data-solo=especial]', f).hidden = tipo !== 'especial';
+  $('[data-oculto=cortesia]', f).hidden = tipo === 'cortesia';
+  $('output', f).textContent = sol(calcularPrecios(ids, tipo, f.elements.precioEsp.value).total);
+}
+function leerFormVenta(f) {
+  const e = f.elements, err = $('.err', f);
+  const d = { tipo: e.tipo.value, precioEsp: e.precioEsp.value, nombre: e.nombre.value.trim(), doc: e.doc.value.trim(), tel: e.tel.value.trim(),
+    pagoEstado: e.pagoEstado.value, medio: e.medio.value, nroOp: e.nroOp.value.trim(), modalidad: e.modalidad.value, entregada: e.entregada.checked,
+    vendedor: e.vendedor.value.trim(), obs: e.obs.value.trim() };
+  let msg = '';
+  if (!d.nombre) msg = 'Falta el nombre del comprador.';
+  else if (!d.vendedor) msg = 'Falta indicar quién hizo la venta.';
+  else if (d.tipo === 'especial' && (d.precioEsp === '' || Number(d.precioEsp) < 0 || isNaN(Number(d.precioEsp)))) msg = 'Indica el precio especial por entrada.';
+  err.hidden = !msg; err.textContent = msg;
+  if (msg) { err.scrollIntoView({ block: 'center' }); return null; }
+  return d;
+}
+function hojaDetalle(id) {
+  const v = S.ventas[id], ids = asientosDe(v), c = v.comprador || {}, p = v.pago || {}, en = v.entrega || {}, act = v.estado === 'activa';
+  const hist = Object.values(S.historial).filter(h => h.venta === id).sort((a, b) => a.ts - b.ts);
+  return `<header class="hoja-cab"><h2>Venta ${esc(v.codigo)}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
+  <div class="hoja-cuerpo">
+    <div class="l1" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${etiquetas(v)}</div>
+    <dl>
+      <dt>Comprador</dt><dd>${esc(c.nombre)}</dd>
+      <dt>DNI</dt><dd>${esc(c.doc) || 'Sin registrar'}</dd>
+      <dt>Teléfono</dt><dd>${esc(c.tel) || 'Sin registrar'}</dd>
+      <dt>Entradas</dt><dd>${ids.length}, ${esc(TIPOS[v.tipo] || v.tipo)}</dd>
+      <dt>Butacas</dt><dd>${esc(resumenAsientos(ids))}</dd>
+      <dt>Total</dt><dd>${sol(v.total)}</dd>
+      ${v.tipo !== 'cortesia' ? `<dt>Pago</dt><dd>${esc(p.medio)}, ${p.estado === 'pendiente' ? 'pendiente' : 'pagado' + (p.fecha ? ' el ' + fch(p.fecha) : '')}${p.nroOp ? ', operación ' + esc(p.nroOp) : ''}</dd>` : ''}
+      <dt>Entrega</dt><dd>${esc(en.modalidad)}, ${en.hecha ? 'realizada' + (en.fecha ? ' el ' + fch(en.fecha) : '') + (en.por ? ' por ' + esc(en.por) : '') : 'pendiente'}</dd>
+      <dt>Vendedor</dt><dd>${esc(v.vendedor)}</dd>
+      <dt>Canal</dt><dd>${v.canal === 'presencial' ? 'Butacas bloqueadas' + (v.bloqueo ? ' (' + esc(v.bloqueo) + ')' : '') : 'Venta general'}</dd>
+      <dt>Registrada</dt><dd>${fch(v.creado)}${v.registradoPor ? ' por ' + esc(v.registradoPor.nombre) : ''}</dd>
+      ${v.obs ? `<dt>Observaciones</dt><dd>${esc(v.obs)}</dd>` : ''}
+      ${v.anulacion ? `<dt>Anulación</dt><dd>${fch(v.anulacion.ts)} por ${esc(v.anulacion.por)}. ${esc(v.anulacion.motivo)}</dd>` : ''}
+    </dl>
+    ${act ? `<div class="accs">
+      <button type="button" class="btn pri" data-a="alternarEntrega" data-v="${esc(id)}">${en.hecha ? 'Marcar entrega como pendiente' : 'Marcar como entregada'}</button>
+      ${v.tipo !== 'cortesia' && p.estado === 'pendiente' ? `<button type="button" class="btn pri" data-a="marcarPagada" data-v="${esc(id)}">Marcar como pagada</button>` : ''}
+      <button type="button" class="btn" data-a="editar" data-v="${esc(id)}">Editar datos</button>
+      <button type="button" class="btn" data-a="reubicar" data-v="${esc(id)}">Cambiar butacas</button>
+      <button type="button" class="btn" data-a="copiarResumen" data-v="${esc(id)}">Copiar resumen</button>
+      <button type="button" class="btn pel" data-a="anular" data-v="${esc(id)}">Anular venta</button>
+    </div>` : ''}
+    <fieldset><legend>Historial de esta venta</legend>
+      ${hist.length ? `<ul class="hist">${hist.map(h => lineaHist(h, false)).join('')}</ul>` : '<p class="nota">Sin movimientos registrados.</p>'}
+    </fieldset>
+  </div>`;
+}
+function hojaAnular(id) {
+  const v = S.ventas[id];
+  return `<form data-f="anular" novalidate>
+    <header class="hoja-cab"><h2>Anular venta ${esc(v.codigo)}</h2><button type="button" class="x" data-a="volverDetalle" aria-label="Cerrar">×</button></header>
+    <div class="hoja-cuerpo">
+      <p>Se liberan ${butacas(asientosDe(v).length)} de ${esc((v.comprador || {}).nombre)}. La venta queda en la lista de anuladas con su historial.</p>
+      <label class="campo">Motivo de la anulación<textarea name="motivo" required></textarea></label>
+      <p class="err" hidden></p>
+    </div>
+    <footer class="hoja-pie"><button type="button" class="btn" data-a="volverDetalle">No anular</button><button type="button" class="btn pel" data-a="enviar">Anular venta</button></footer>
+  </form>`;
+}
+function hojaConfirmar(m) {
+  return `<header class="hoja-cab"><h2>${esc(m.titulo)}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
+    <div class="hoja-cuerpo"><p>${esc(m.texto)}</p></div>
+    <footer class="hoja-pie"><button type="button" class="btn" data-a="cerrar">Cancelar</button><button type="button" class="btn pri" data-a="confirmarSi">${esc(m.boton)}</button></footer>`;
+}
+function confirmar(titulo, texto, boton, alAceptar) { abrir({ tipo: 'confirmar', titulo, texto, boton, alAceptar }); }
+function hojaBloquear(m) {
+  const motivos = [...new Set(['Venta presencial', ...Object.values(S.bloqueos).map(b => b.motivo)].filter(Boolean))];
+  return `<form data-f="bloquear" novalidate>
+    <header class="hoja-cab"><h2>Bloquear ${butacas(m.ids.length)}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
+    <div class="hoja-cuerpo">
+      <p class="res-but"><b>${butacas(m.ids.length)}</b>${esc(resumenAsientos(m.ids))}</p>
+      <label class="campo">Motivo o destino del bloqueo<input type="text" name="motivo" list="dlMot" autocomplete="off" value="Venta presencial"></label>
+      <datalist id="dlMot">${motivos.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+      <p class="nota">Quedan fuera de la venta general hasta que alguien las desbloquee. El bloqueo se registra a nombre de ${esc(U.nombre)}.</p>
+      <p class="err" hidden></p>
+    </div>
+    <footer class="hoja-pie"><button type="button" class="btn" data-a="cerrar">Cancelar</button><button type="button" class="btn pri" data-a="enviar">Bloquear</button></footer>
+  </form>`;
+}
+function hojaTexto(m) {
+  return `<header class="hoja-cab"><h2>${esc(m.titulo)}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
+    <div class="hoja-cuerpo"><p class="nota">Este visor no permite copiar de forma automática. Mantén presionado el texto, elige "Seleccionar todo" y luego "Copiar".</p><textarea readonly style="min-height:220px">${esc(m.texto)}</textarea></div>
+    <footer class="hoja-pie"><button type="button" class="btn pri" data-a="cerrar">Cerrar</button></footer>`;
+}
+function hojaUsuario() {
+  return `<form data-f="usuario" novalidate>
+    <header class="hoja-cab"><h2>Cambiar nombre</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
+    <div class="hoja-cuerpo">
+      <label class="campo">Tu nombre<input type="text" name="nombre" required value="${esc(U.nombre)}"></label>
+    </div>
+    <footer class="hoja-pie"><button type="button" class="btn" data-a="cerrar">Cancelar</button><button type="button" class="btn pri" data-a="enviar">Guardar</button></footer>
+  </form>`;
+}
+
+/* =====================================================================
+   10. ACCIONES
+   ===================================================================== */
+let enCurso = 0; // operaciones propias en marcha: mientras duran no se depura la selección
+async function intentar(fn, okMsg, boton) {
+  if (boton) boton.disabled = true;
+  enCurso++;
+  try { const r = await fn(); if (okMsg) toast(okMsg, 'ok'); return r === undefined ? true : r; }
+  catch (e) { toast(e.message || String(e), 'error'); return false; }
+  finally { enCurso--; if (boton && boton.isConnected) boton.disabled = false; }
+}
+function limpiarSel() { UI.sel.clear(); UI.selTipo = null; }
+function tocarButaca(id) {
+  const e = estadoAsiento(id);
+  const alternar = () => { if (UI.sel.has(id)) UI.sel.delete(id); else UI.sel.add(id); if (!UI.sel.size) UI.selTipo = null; pintarMapa(); pintarSeleccion(); };
+  if (UI.reubicar) {
+    if (e.vid === UI.reubicar || e.e === 'libre' || e.e === 'cupo') alternar();
+    else toast('Esa butaca ya está ocupada.');
+    return;
+  }
+  if (e.vid) { abrir({ tipo: 'detalle', id: e.vid }); return; }
+  const tipo = e.e === 'cupo' ? 'cupo' : 'libre';
+  if (UI.modo === 'vender' && tipo === 'cupo') { toast('Butaca bloqueada (' + motivoDe(id) + '). Para venderla o desbloquearla, pasa a "Bloquear".'); return; }
+  if (UI.sel.size && UI.selTipo !== tipo && !UI.sel.has(id)) { toast('Elige por separado las butacas libres y las bloqueadas.'); return; }
+  UI.selTipo = tipo; alternar();
+}
+// En modo bloqueo, la letra de la fila elige (o suelta) la fila completa.
+function tocarFila(sector, fila) {
+  if (UI.reubicar || UI.modo !== 'bloquear') return;
+  const ids = LISTA.filter(a => a.sector === sector && a.fila === fila).map(a => a.id);
+  const tipo = UI.sel.size ? UI.selTipo : (ids.some(id => estadoAsiento(id).e === 'libre') ? 'libre' : 'cupo');
+  const aptas = ids.filter(id => estadoAsiento(id).e === tipo);
+  if (!aptas.length) { toast('En la fila ' + fila + ' no hay butacas ' + (tipo === 'libre' ? 'libres' : 'bloqueadas') + '.'); return; }
+  const todas = aptas.every(id => UI.sel.has(id));
+  for (const id of aptas) { if (todas) UI.sel.delete(id); else UI.sel.add(id); }
+  UI.selTipo = UI.sel.size ? tipo : null;
+  pintarMapa(); pintarSeleccion();
+}
+function textoResumen(v) {
+  const ids = asientosDe(v), p = v.pago || {};
+  return [EVENTO.nombre + ': ' + EVENTO.subtitulo, EVENTO.lugar + ', ' + EVENTO.fecha, '',
+    'Venta ' + v.codigo + ' a nombre de ' + (v.comprador || {}).nombre,
+    entradas(ids.length) + ' (' + (TIPOS[v.tipo] || v.tipo) + ')', resumenAsientos(ids),
+    v.tipo === 'cortesia' ? 'Cortesía' : 'Total: ' + sol(v.total) + ' (' + p.medio + ', ' + (p.estado === 'pendiente' ? 'pago pendiente' : 'pagado') + ')',
+    'Entrega: ' + (v.entrega || {}).modalidad].join('\n');
+}
+const A = {
+  tab(b) { UI.tab = b.dataset.v; pintar(); window.scrollTo(0, 0); },
+  zoom() { UI.zoom = UI.zoom === 'cerca' ? 'todo' : 'cerca'; ajustarZoom(); },
+  ir(b) { const el = $('#sec-' + b.dataset.v); if (el) el.scrollIntoView({ block: 'start' }); },
+  cerrar() { cerrar(); },
+  filtro(b) { UI.filtro = b.dataset.v; pintarVentas(); },
+  detalle(b) { abrir({ tipo: 'detalle', id: b.dataset.v }); },
+  volverDetalle() { abrir({ tipo: 'detalle', id: UI.modal.id }); },
+  limpiarSel() { limpiarSel(); pintar(); },
+  abrirVenta() {
+    if (!UI.sel.size) return;
+    const ids = ordenar(UI.sel), deCupo = UI.selTipo === 'cupo';
+    abrir({ tipo: 'venta', ids, deCupo, bloqueo: deCupo ? [...new Set(ids.map(motivoDe))].join(', ') : '' });
+  },
+  enviar(b) { const f = b.closest('form'); if (f && F[f.dataset.f]) F[f.dataset.f](f); },
+  modo(b) { if (UI.modo === b.dataset.v) return; UI.modo = b.dataset.v; limpiarSel(); pintar(); },
+  abrirBloqueo() { if (UI.sel.size) abrir({ tipo: 'bloquear', ids: ordenar(UI.sel) }); },
+  async desbloquearSel(b) { const ids = [...UI.sel]; if (await intentar(() => liberar(ids), butacas(ids.length) + (ids.length === 1 ? ' desbloqueada.' : ' desbloqueadas.'), b)) limpiarSel(); else depurarSeleccion(); pintar(); },
+  irBloquear() { UI.tab = 'mapa'; UI.modo = 'bloquear'; UI.reubicar = null; limpiarSel(); pintar(); window.scrollTo(0, 0); },
+  verTanda(b) {
+    const t = tandas().find(x => x.id === b.dataset.v); if (!t) return;
+    UI.tab = 'mapa'; UI.modo = 'bloquear'; UI.reubicar = null; UI.zoom = 'cerca';
+    UI.sel = new Set(t.libres); UI.selTipo = t.libres.length ? 'cupo' : null;
+    pintar();
+    const el = $(`#mapa .b[data-id="${t.libres[0] || t.vendidas[0]}"]`); if (el) el.scrollIntoView({ block: 'center', inline: 'center' });
+  },
+  liberarTanda(b) {
+    const t = tandas().find(x => x.id === b.dataset.v); if (!t || !t.libres.length) return;
+    confirmar('Desbloquear ' + butacas(t.libres.length), 'Vuelven a la venta general las butacas sin vender de "' + t.motivo + '": ' + resumenAsientos(t.libres) + '.', 'Desbloquear',
+      () => intentar(() => liberar(t.libres), butacas(t.libres.length) + (t.libres.length === 1 ? ' desbloqueada.' : ' desbloqueadas.')));
+  },
+  editar(b) { abrir({ tipo: 'editar', id: b.dataset.v }); },
+  anular(b) { abrir({ tipo: 'anular', id: b.dataset.v }); },
+  async alternarEntrega(b) {
+    const id = b.dataset.v, n = copia(S.ventas[id]); n.entrega = n.entrega || {}; n.entrega.hecha = !n.entrega.hecha;
+    await intentar(() => guardarVenta(id, n, n.entrega.hecha ? 'Entrega realizada' : 'Entrega marcada como pendiente'), n.entrega.hecha ? 'Entrega registrada.' : 'Entrega marcada como pendiente.', b);
+  },
+  async marcarPagada(b) {
+    const id = b.dataset.v, n = copia(S.ventas[id]); n.pago.estado = 'pagado';
+    await intentar(() => guardarVenta(id, n, 'Pago recibido'), 'Pago registrado.', b);
+  },
+  async copiarResumen(b) {
+    const txt = textoResumen(S.ventas[b.dataset.v]);
+    if (await copiarTexto(txt)) toast('Resumen copiado. Pégalo en WhatsApp o en un correo.', 'ok');
+    else abrir({ tipo: 'texto', titulo: 'Resumen de la venta', texto: txt });
+  },
+  reubicar(b) {
+    const id = b.dataset.v; UI.reubicar = id; UI.sel = new Set(asientosDe(S.ventas[id])); UI.selTipo = null; UI.tab = 'mapa'; UI.zoom = 'cerca';
+    cerrar(); pintar();
+    const el = $(`#mapa .b[data-id="${[...UI.sel][0]}"]`); if (el) el.scrollIntoView({ block: 'center', inline: 'center' });
+  },
+  cancelarReubicar() { UI.reubicar = null; limpiarSel(); pintar(); },
+  async guardarReubicar(b) {
+    const id = UI.reubicar, ids = [...UI.sel];
+    if (await intentar(() => cambiarAsientos(id, ids), 'Butacas cambiadas.', b)) { UI.reubicar = null; limpiarSel(); pintar(); abrir({ tipo: 'detalle', id }); }
+  },
+  async confirmarSi(b) { const m = UI.modal; b.disabled = true; await m.alAceptar(); cerrar(); pintar(); },
+  exportarButacas() {
+    const cab = ['ID Asiento', 'Sector', 'Fila', 'Número de Asiento', 'Precio', 'Estado', 'Comprador', 'DNI', 'Teléfono', 'Fecha de Pago', 'Observaciones',
+      'Código de venta', 'Tipo de entrada', 'Precio cobrado', 'Medio de pago', 'Pago', 'N.º de operación', 'Modalidad de entrega', 'Entregada', 'Vendedor', 'Canal', 'Bloqueo', 'Fecha de registro'];
+    const nomE = { libre: 'Disponible', cupo: 'Bloqueado', vendido: 'Vendido', reservado: 'Pago pendiente', cortesia: 'Cortesía' };
+    const fx = ts => ts ? new Date(ts).toLocaleString('es-PE') : '';
+    const filas = [...LISTA].sort((a, b) => a.sector.localeCompare(b.sector) || FILAS[a.sector].indexOf(b.fila) - FILAS[a.sector].indexOf(a.fila) || a.num - b.num).map(a => {
+      const e = estadoAsiento(a.id), v = e.venta, r = S.asientos[a.id] || {};
+      const base = ['Sector ' + a.id, 'Sector ' + a.sector, a.fila, a.num, a.precio, nomE[e.e]];
+      if (!v) return [...base, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', r.p ? motivoDe(a.id) : '', ''];
+      const c = v.comprador || {}, p = v.pago || {}, en = v.entrega || {};
+      return [...base, c.nombre, c.doc, c.tel, fx(p.fecha), v.obs, v.codigo, TIPOS[v.tipo] || v.tipo, precioDe(v, a.id), p.medio, p.estado === 'pendiente' ? 'Pendiente' : 'Pagado', p.nroOp,
+        en.modalidad, en.hecha ? 'Sí' : 'No', v.vendedor, v.canal === 'presencial' ? 'Bloqueo' : 'General', r.p ? motivoDe(a.id) : '', fx(v.creado)];
+    });
+    descargar('control-entradas-saqra.csv', csv([cab, ...filas]));
+  },
+  exportarHistorial() {
+    const filas = Object.values(S.historial).sort((a, b) => a.ts - b.ts).map(h => [new Date(h.ts).toLocaleString('es-PE'), h.por, h.accion, h.codigo || '',
+      [h.detalle || '', ...(h.cambios || []).map(c => c.campo + ': "' + c.antes + '" pasa a "' + c.despues + '"')].filter(Boolean).join(' | ')]);
+    descargar('historial-saqra.csv', csv([['Fecha', 'Responsable', 'Acción', 'Venta', 'Detalle'], ...filas]));
+  },
+  cambiarUsuario() { abrir({ tipo: 'usuario' }); },
+  reiniciarDemo() { confirmar('Reiniciar datos de prueba', 'Se borran las ventas y bloqueos de esta sesión de prueba y se vuelve a cargar la venta inicial del Excel.', 'Reiniciar', async () => { limpiarSel(); UI.reubicar = null; almacen.reiniciar(); await sembrarDemo(); }); },
+  salir() { if (cerrarSesion) cerrarSesion(); }
+};
+const F = {
+  async bloquear(f) {
+    const motivo = f.elements.motivo.value.trim(), err = $('.err', f);
+    err.hidden = !!motivo; err.textContent = 'Escribe el motivo o destino del bloqueo.'; if (!motivo) return;
+    const ids = UI.modal.ids;
+    if (await intentar(() => bloquear(ids, motivo), butacas(ids.length) + (ids.length === 1 ? ' bloqueada.' : ' bloqueadas.'), $('.btn.pri', f))) { limpiarSel(); cerrar(); }
+    else { cerrar(); depurarSeleccion(); }
+    pintar();
+  },
+  async venta(f) {
+    const d = leerFormVenta(f); if (!d) return;
+    const m = UI.modal; d.asientos = m.ids; d.deCupo = m.deCupo; d.bloqueo = m.bloqueo;
+    const id = await intentar(() => crearVenta(d), 'Venta registrada.', $('.btn.pri', f));
+    if (id) { limpiarSel(); cerrar(); pintar(); abrir({ tipo: 'detalle', id }); }
+    else depurarSeleccion();
+  },
+  async editar(f) {
+    const d = leerFormVenta(f); if (!d) return;
+    const id = UI.modal.id, v = S.ventas[id], n = copia(v), ids = asientosDe(v), c = calcularPrecios(ids, d.tipo, d.precioEsp), cort = d.tipo === 'cortesia';
+    n.tipo = d.tipo; n.precios = c.precios; n.total = c.total;
+    n.comprador = { nombre: d.nombre, doc: d.doc, tel: d.tel };
+    n.pago = Object.assign({}, v.pago, cort ? { medio: 'No aplica', estado: 'pagado', nroOp: '' } : { medio: d.medio, estado: d.pagoEstado, nroOp: d.nroOp });
+    n.entrega = Object.assign({}, v.entrega, { modalidad: d.modalidad, hecha: d.entregada });
+    n.vendedor = d.vendedor; n.obs = d.obs;
+    const r = await intentar(() => guardarVenta(id, n), '', $('.btn.pri', f));
+    if (r === false) return;
+    toast(r === 'ok' ? 'Cambios guardados.' : 'No había cambios que guardar.', r === 'ok' ? 'ok' : '');
+    abrir({ tipo: 'detalle', id });
+  },
+  async anular(f) {
+    const motivo = f.elements.motivo.value.trim(), err = $('.err', f);
+    err.hidden = !!motivo; err.textContent = 'Escribe el motivo de la anulación.'; if (!motivo) return;
+    const id = UI.modal.id;
+    if (await intentar(() => anularVenta(id, motivo), 'Venta anulada.', $('.btn.pel', f))) { abrir({ tipo: 'detalle', id }); pintar(); }
+  },
+  usuario(f) {
+    const n = f.elements.nombre.value.trim(); if (!n) return;
+    U = { uid: 'demo-' + n.toLowerCase().replace(/\s+/g, '-'), nombre: n };
+    limpiarSel(); cerrar(); pintar();
+  }
+};
+// Si otra persona toma una butaca que yo tenía elegida, sale de mi selección.
+function depurarSeleccion() {
+  if (enCurso) return;
+  if (UI.reubicar) {
+    if (!S.ventas[UI.reubicar] || S.ventas[UI.reubicar].estado !== 'activa') { UI.reubicar = null; limpiarSel(); }
+    return;
+  }
+  let fuera = 0;
+  for (const id of [...UI.sel]) { const e = estadoAsiento(id).e; if (e !== (UI.selTipo === 'cupo' ? 'cupo' : 'libre')) { UI.sel.delete(id); fuera++; } }
+  if (!UI.sel.size) UI.selTipo = null;
+  if (fuera) {
+    toast(fuera === 1 ? 'Una butaca que habías elegido acaba de ser tomada por otra persona.' : fuera + ' butacas que habías elegido acaban de ser tomadas por otra persona.', 'error');
+    if (UI.modal && (UI.modal.tipo === 'venta' || UI.modal.tipo === 'bloquear')) cerrar();
+    pintar();
+  }
+}
+
+document.addEventListener('click', e => {
+  if (e.target.matches('[data-velo]')) { const m = UI.modal; if (m && (m.tipo === 'detalle' || m.tipo === 'confirmar')) cerrar(); return; }
+  const b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
+  const fn = A[b.dataset.a]; if (fn) fn(b, e);
+});
+// Nada depende del envío nativo de formularios: algunos visores (por ejemplo dentro de apps) lo bloquean.
+document.addEventListener('submit', e => e.preventDefault());
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.form && (t.form.dataset.f === 'venta' || t.form.dataset.f === 'editar')) actualizarFormVenta(t.form);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && UI.modal && (UI.modal.tipo === 'detalle' || UI.modal.tipo === 'confirmar')) cerrar();
+  if (e.key === 'Enter' && e.target.matches && e.target.matches('#modal form input:not([type=checkbox]):not([type=radio])')) {
+    e.preventDefault(); const f = e.target.form; if (f && F[f.dataset.f]) F[f.dataset.f](f);
+  }
+});
+
+/* =====================================================================
+   11. ARRANQUE
+   ===================================================================== */
+function alCambiarDatos(d) {
+  S = d;
+  if (U && S.usuarios[U.uid]) U.nombre = S.usuarios[U.uid].nombre || U.nombre;
+  if (U && $('#mapa')) { depurarSeleccion(); programar(); }
+}
+function puerta(html, alEnviar) {
+  $('#app').innerHTML = `<div class="puerta"><form novalidate><h1>${esc(EVENTO.nombre)}</h1><div class="sub">${esc(EVENTO.subtitulo)}</div><p>Control de entradas. ${esc(EVENTO.lugar)}, ${esc(EVENTO.fecha)}.</p>${html}<p class="err" hidden></p></form></div>`;
+  const f = $('#app form'), b = $('button', f), err = $('.err', f);
+  let ocupado = false;
+  const enviar = async () => {
+    if (ocupado) return;
+    ocupado = true; b.disabled = true; if (err) err.hidden = true;
+    try { await alEnviar(f); } catch (x) { if (err) { err.textContent = x.message || String(x); err.hidden = false; } }
+    ocupado = false; if (b.isConnected) b.disabled = false;
+  };
+  b.type = 'button';
+  b.addEventListener('click', enviar);
+  f.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); enviar(); } });
+}
+// Venta que ya figuraba en el Excel de control (solo se carga en el modo demo).
+async function sembrarDemo() {
+  const yo = U; U = { uid: 'excel', nombre: 'Excel de control' };
+  try {
+    await crearVenta({ asientos: [7, 8, 9, 10, 11, 12, 13, 14, 15].map(n => 'A-G-' + n), tipo: 'general', nombre: 'Venta previa (Excel de control)',
+      pagoEstado: 'pagado', pagoFecha: null, medio: 'Sin registrar', modalidad: 'Sin registrar', entregada: false, vendedor: 'Sin registrar',
+      obs: 'Venta importada del Excel de control.' });
+  } finally { U = yo; }
+}
+async function iniciarDemo() {
+  almacen = almacenLocal(alCambiarDatos);
+  puerta(`<p class="aviso" style="margin:14px 0 0">Modo demo: sirve para probar el app. Los datos no se guardan ni se comparten.</p>
+    <label class="campo">Tu nombre<input type="text" name="nombre" required autocomplete="off" autocapitalize="words" enterkeyhint="go"></label>
+    <button class="btn pri">Entrar</button>`, async f => {
+    const n = f.elements.nombre.value.trim(); if (!n) throw new Error('Escribe tu nombre: es el que queda como responsable de cada venta.');
+    U = { uid: 'demo-' + n.toLowerCase().replace(/\s+/g, '-'), nombre: n };
+    await sembrarDemo();
+    montar();
+  });
+}
+function cargarScript(src) {
+  return new Promise((ok, mal) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => mal(new Error('No se pudo cargar ' + src)); document.head.appendChild(s); });
+}
+async function iniciarFirebase() {
+  const base = 'https://www.gstatic.com/firebasejs/' + FIREBASE_SDK + '/';
+  await cargarScript(base + 'firebase-app-compat.js');
+  await Promise.all([cargarScript(base + 'firebase-auth-compat.js'), cargarScript(base + 'firebase-database-compat.js')]);
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const auth = firebase.auth(), fdb = firebase.database();
+  cerrarSesion = () => auth.signOut().then(() => location.reload());
+  auth.onAuthStateChanged(async user => {
+    if (!user) {
+      U = null;
+      puerta(`<label class="campo">Correo<input type="email" name="correo" required autocomplete="username"></label>
+        <label class="campo">Contraseña<input type="password" name="clave" required autocomplete="current-password"></label>
+        <button class="btn pri">Entrar</button>`, async f => {
+        try { await auth.signInWithEmailAndPassword(f.elements.correo.value.trim(), f.elements.clave.value); }
+        catch (e) { throw new Error('No se pudo entrar. Revisa el correo y la contraseña.'); }
+      });
+      return;
+    }
+    try {
+      let perfil = (await fdb.ref('usuarios/' + user.uid).get()).val();
+      if (!perfil) {
+        puerta(`<label class="campo">Tu nombre (aparece como responsable de tus ventas)<input type="text" name="nombre" required autocomplete="name"></label><button class="btn pri">Continuar</button>`, async f => {
+          const n = f.elements.nombre.value.trim(); if (!n) throw new Error('Escribe tu nombre.');
+          await fdb.ref('usuarios/' + user.uid).set({ nombre: n, correo: user.email || '', activo: true });
+          location.reload();
+        });
+        return;
+      }
+      if (perfil.activo === false) {
+        puerta(`<p class="err">Esta cuenta está desactivada. Pide que la reactiven.</p><button class="btn">Cerrar sesión</button>`, async () => cerrarSesion());
+        return;
+      }
+      U = { uid: user.uid, nombre: perfil.nombre };
+      almacen = almacenFirebase(fdb, alCambiarDatos);
+      montar();
+    } catch (e) {
+      puerta(`<p class="err">No se pudo leer la base de datos: ${esc(e.message)}</p><button class="btn">Cerrar sesión</button>`, async () => cerrarSesion());
+    }
+  });
+}
+// La tipografía se pide después de mostrar la página: si no hay red, el app abre igual.
+(function () {
+  const l = document.createElement('link'); l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap';
+  document.head.appendChild(l);
+})();
+(FIREBASE_CONFIG ? iniciarFirebase() : iniciarDemo()).catch(e => {
+  $('#app').innerHTML = `<div class="puerta"><form><h1>No se pudo iniciar</h1><p>${esc(e.message)}</p></form></div>`;
+});
+</script>
+</body>
+</html>
