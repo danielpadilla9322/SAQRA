@@ -50,14 +50,14 @@ h1,h2,h3{font-family:var(--fc);margin:0;line-height:1.15}
 .ocu-in{max-width:1180px;margin:0 auto;padding:10px 16px}
 .ocu-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:#E7E4F0}
 .ocu-bar i{display:block;height:100%}
-.o-vendido{background:var(--tinta)} .o-reservado{background:var(--maiz)} .o-cortesia{background:var(--fucsia)}
+.o-vendido{background:var(--tinta)} .o-reservado{background:var(--maiz)}
 .o-cupo{background:repeating-linear-gradient(135deg,#fff 0 3px,#A8A2BC 3px 6px)}
 .ley{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0 0;padding:0;list-style:none;font-size:13.5px;color:var(--tinta2)}
 .ley li{display:flex;align-items:center;gap:6px}
 .ley b{font-weight:600;color:var(--tinta);font-variant-numeric:tabular-nums}
 .pt{width:12px;height:12px;border-radius:3px;border:1px solid var(--gris);flex:none}
 .pt.o-libre{background:#E7E4F0;border-color:#C9C4DA}
-.pt.o-vendido,.pt.o-reservado,.pt.o-cortesia{border-color:transparent}
+.pt.o-vendido,.pt.o-reservado{border-color:transparent}
 
 main{max-width:1180px;margin:0 auto;padding:0 0 calc(var(--nav) + 24px)}
 body.con-sel main{padding-bottom:calc(var(--nav) + 150px)}
@@ -87,6 +87,11 @@ body.con-sel main{padding-bottom:calc(var(--nav) + 150px)}
 .sec-tit{display:flex;gap:10px;align-items:baseline;margin:18px 0 8px;padding:5px calc(var(--lab) + var(--g));font-family:var(--fc);font-size:15px;color:var(--tinta2);position:sticky;left:0;max-width:92vw;scroll-margin-top:70px}
 .sec-tit:first-child{margin-top:0}
 .sec-tit > *{white-space:nowrap;flex:none}
+.sec-cap{display:flex;flex-wrap:wrap;gap:8px;margin:-2px 0 10px;padding:0 calc(var(--lab) + var(--g));position:sticky;left:0;max-width:92vw}
+.mapa.mini .sec-cap{margin-bottom:6px}
+.sec-cap .btn{font-size:13.5px;padding:4px 10px;min-height:32px}
+.cap-wrap{border:1px solid var(--linea);border-radius:8px;overflow:hidden;background:#fff}
+.cap-img{display:block;width:100%;height:auto}
 .sec-tit b{font-size:19px;color:#fff;padding:1px 9px;border-radius:5px}
 .sec-tit.sA b{background:var(--rojo)} .sec-tit.sB b{background:var(--azul)} .sec-tit.sC b{background:var(--verde)}
 .sec-tit em{font-style:normal;font-weight:700;color:var(--tinta)}
@@ -102,7 +107,6 @@ body.con-sel main{padding-bottom:calc(var(--nav) + 150px)}
 .b.sC{--c:var(--verde);--ct:var(--verde-t);--cd:var(--verde-d);--cb:#8DD0AC}
 .b.e-vendido{background:var(--tinta);border-color:var(--tinta);color:#fff}
 .b.e-reservado{background:var(--maiz);border-color:#C28F00;color:var(--tinta)}
-.b.e-cortesia{background:var(--fucsia);border-color:var(--fucsia);color:#fff}
 .b.e-cupo{background:repeating-linear-gradient(135deg,#fff 0 3px,#D5D1E2 3px 6px);border:1.5px dashed var(--tinta2);color:var(--tinta)}
 .b.sel{background:var(--c);border:1.5px solid #fff;color:#fff;box-shadow:0 0 0 2.5px var(--tinta)}
 .mapa.mini{cursor:pointer}
@@ -132,13 +136,13 @@ textarea{min-height:70px;resize:vertical}
 .filtros button{flex:none;border:1.5px solid #B9B3CE;background:var(--papel);border-radius:999px;padding:5px 12px;font-size:14.5px}
 .filtros button[aria-pressed=true]{background:var(--tinta);border-color:var(--tinta);color:#fff}
 .venta{display:block;width:100%;text-align:left;background:var(--papel);border:1px solid var(--linea);border-left:5px solid var(--tinta);border-radius:8px;padding:11px 13px;margin-top:10px}
-.venta.pend{border-left-color:var(--maiz)} .venta.cort{border-left-color:var(--fucsia)} .venta.anul{border-left-color:var(--gris);opacity:.7}
+.venta.pend{border-left-color:var(--maiz)} .venta.anul{border-left-color:var(--gris);opacity:.7}
 .venta .l1{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .venta .cod{font:700 16px var(--fc);color:var(--tinta2)}
 .venta .nom{font:600 19px var(--fc);margin:2px 0}
 .venta .det{font-size:14.5px;color:var(--tinta2)}
 .et{font-size:12.5px;font-weight:600;border-radius:4px;padding:1px 7px;background:#E7E4F0;color:var(--tinta2)}
-.et.ok{background:var(--verde-t);color:var(--verde-d)} .et.pend{background:#FFEBB0;color:#6B4E00} .et.cort{background:#F8D3E8;color:#7D0E4E} .et.mal{background:var(--rojo-t);color:var(--rojo-d)} .et.cupo{background:#E7E4F0;color:var(--tinta)}
+.et.ok{background:var(--verde-t);color:var(--verde-d)} .et.pend{background:#FFEBB0;color:#6B4E00} .et.mal{background:var(--rojo-t);color:var(--rojo-d)} .et.cupo{background:#E7E4F0;color:var(--tinta)}
 .vacio{padding:28px 8px;text-align:center;color:var(--tinta2)}
 
 .caja{background:var(--papel);border:1px solid var(--linea);border-radius:10px;padding:16px;margin-bottom:14px}
@@ -274,12 +278,11 @@ const EVENTO = {
   fecha: 'viernes 13 de noviembre de 2026'
 };
 const SECTORES = {
-  A: { nombre: 'Sector A', zona: '1er piso (rojo)', precio: 90 },
-  B: { nombre: 'Sector B', zona: '2do piso (azul)', precio: 80 },
-  C: { nombre: 'Sector C', zona: 'Superior (verde)', precio: 70 }
+  A: { nombre: 'Frente', precio: 90, c: '#D9381E', t: '#FBE0D9', b: '#EFA898', d: '#8C200D' },
+  B: { nombre: 'Fondo', precio: 80, c: '#0A7FC9', t: '#D6EBF9', b: '#8FC6EA', d: '#07507F' },
+  C: { nombre: 'Segundo piso', precio: 70, c: '#0F9150', t: '#D7F0E1', b: '#8DD0AC', d: '#0A5C33' }
 };
 const CANALES = { virtual: 'Venta virtual', fisica: 'Venta física' };
-const TIPOS = { general: 'General', cortesia: 'Cortesía', especial: 'Precio especial' };
 const MEDIOS = ['Efectivo', 'Yape', 'Plin', 'Transferencia', 'Tarjeta (POS)', 'Otro'];
 const MODALIDADES = ['Entrega física', 'Envío digital (WhatsApp o correo)', 'Recojo en boletería'];
 
@@ -356,15 +359,12 @@ function resumenAsientos(ids) {
       r.push(j === i ? String(nums[i]) : j === i + 1 ? nums[i] + ' y ' + nums[j] : nums[i] + ' al ' + nums[j]);
       i = j + 1;
     }
-    return 'Sector ' + s + ', fila ' + f + ': ' + r.join(', ');
+    return SECTORES[s].nombre + ', fila ' + f + ': ' + r.join(', ');
   }).join('; ');
 }
-function calcularPrecios(ids, tipo, especial) {
+function calcularPrecios(ids) {
   const precios = {}; let total = 0;
-  for (const id of ids) {
-    const p = tipo === 'cortesia' ? 0 : tipo === 'especial' ? (Number(especial) || 0) : ASIENTOS[id].precio;
-    precios[id] = p; total += p;
-  }
+  for (const id of ids) { precios[id] = ASIENTOS[id].precio; total += ASIENTOS[id].precio; }
   return { precios, total };
 }
 function toast(msg, tipo) {
@@ -477,7 +477,7 @@ function estadoAsiento(id) {
   if (!r) return { e: 'libre' };
   if (r.v) {
     const v = S.ventas[r.v];
-    const e = !v ? 'vendido' : v.tipo === 'cortesia' ? 'cortesia' : (v.pago && v.pago.estado === 'pendiente') ? 'reservado' : 'vendido';
+    const e = !v ? 'vendido' : (v.pago && v.pago.estado === 'pendiente') ? 'reservado' : 'vendido';
     return { e, vid: r.v, venta: v, cupo: !!r.p };
   }
   return r.p ? { e: 'cupo' } : { e: 'libre' };
@@ -486,7 +486,7 @@ const motivoDe = id => { const r = S.asientos[id]; return (r && r.p && S.bloqueo
 const precioDe = (v, id) => (v && v.precios && v.precios[id] != null) ? Number(v.precios[id]) : ASIENTOS[id].precio;
 
 function estadisticas() {
-  const nuevo = () => ({ total: 0, vendidas: 0, reservadas: 0, cortesias: 0, cupoLibre: 0, cupoTotal: 0, libres: 0, cobrado: 0, porCobrar: 0 });
+  const nuevo = () => ({ total: 0, vendidas: 0, reservadas: 0, cupoLibre: 0, cupoTotal: 0, libres: 0, cobrado: 0, porCobrar: 0 });
   const sec = { A: nuevo(), B: nuevo(), C: nuevo() }, tot = nuevo();
   for (const a of LISTA) {
     const e = estadoAsiento(a.id), r = S.asientos[a.id];
@@ -495,30 +495,22 @@ function estadisticas() {
       if (r && r.p) o.cupoTotal++;
       if (e.e === 'libre') o.libres++;
       else if (e.e === 'cupo') o.cupoLibre++;
-      else if (e.e === 'cortesia') o.cortesias++;
       else if (e.e === 'reservado') { o.reservadas++; o.porCobrar += precioDe(e.venta, a.id); }
       else { o.vendidas++; o.cobrado += precioDe(e.venta, a.id); }
     }
   }
-  const medio = {}, cuenta = {}, canal = { virtual: 0, fisica: 0 };
+  const medio = {}, canal = { virtual: 0, fisica: 0 };
   let entOk = 0, entPend = 0;
   for (const v of Object.values(S.ventas)) {
     if (v.estado !== 'activa') continue;
-    const n = asientosDe(v).length, pend = v.tipo !== 'cortesia' && v.pago && v.pago.estado === 'pendiente';
-    if (v.tipo !== 'cortesia') {
-      const km = (v.pago && v.pago.medio) || 'Sin registrar';
-      if (!medio[km]) medio[km] = { entradas: 0, cobrado: 0, porCobrar: 0 };
-      medio[km].entradas += n; medio[km][pend ? 'porCobrar' : 'cobrado'] += Number(v.total) || 0;
-      if (!pend) {
-        const kc = (v.pago && v.pago.cuenta) || 'Sin indicar';
-        if (!cuenta[kc]) cuenta[kc] = { entradas: 0, cobrado: 0 };
-        cuenta[kc].entradas += n; cuenta[kc].cobrado += Number(v.total) || 0;
-      }
-    }
+    const n = asientosDe(v).length, pend = v.pago && v.pago.estado === 'pendiente';
+    const km = (v.pago && v.pago.medio) || 'Sin registrar';
+    if (!medio[km]) medio[km] = { entradas: 0, cobrado: 0, porCobrar: 0 };
+    medio[km].entradas += n; medio[km][pend ? 'porCobrar' : 'cobrado'] += Number(v.total) || 0;
     if (v.entrega && v.entrega.hecha) entOk += n; else entPend += n;
     canal[v.canal === 'fisica' ? 'fisica' : 'virtual'] += n;
   }
-  return { sec, tot, medio, cuenta, canal, entOk, entPend };
+  return { sec, tot, medio, canal, entOk, entPend };
 }
 
 /* =====================================================================
@@ -541,14 +533,12 @@ async function crearVenta(d) {
   if (!ok) throw new Error('Una o más butacas ya no están disponibles. Revisa el mapa y elige de nuevo.');
   try {
     const num = await almacen.siguienteNum(), ahora = Date.now();
-    const { precios, total } = calcularPrecios(ids, d.tipo, d.precioEsp);
-    const cort = d.tipo === 'cortesia';
+    const { precios, total } = calcularPrecios(ids);
     const venta = {
       num, codigo: 'V-' + String(num).padStart(4, '0'), estado: 'activa', canal: d.canal === 'fisica' || d.canal === 'virtual' ? d.canal : (deCupo ? 'fisica' : 'virtual'), bloqueo: deCupo ? (d.bloqueo || '') : '',
-      tipo: d.tipo, asientos: ids, precios, total,
+      asientos: ids, precios, total,
       comprador: { nombre: d.nombre, doc: d.doc || '', tel: d.tel || '' },
-      pago: cort ? { medio: 'No aplica', estado: 'pagado', cuenta: '', fecha: null }
-                 : { medio: d.medio, estado: d.pagoEstado, cuenta: d.cuenta || '', fecha: d.pagoEstado === 'pagado' ? (d.pagoFecha === undefined ? ahora : d.pagoFecha) : null },
+      pago: { medio: d.medio, estado: d.pagoEstado, fecha: d.pagoEstado === 'pagado' ? (d.pagoFecha === undefined ? ahora : d.pagoFecha) : null },
       entrega: { modalidad: d.modalidad, responsable: d.responsable || '', hecha: !!d.entregada, fecha: d.entregada ? ahora : null },
       vendedor: d.vendedor || U.nombre, registradoPor: { uid: U.uid, nombre: U.nombre },
       obs: d.obs || '', creado: ahora, modificado: ahora
@@ -564,8 +554,8 @@ async function crearVenta(d) {
 
 const CAMPOS = [
   ['comprador.nombre', 'Comprador'], ['comprador.doc', 'DNI'], ['comprador.tel', 'Teléfono'],
-  ['tipo', 'Tipo de entrada', v => TIPOS[v] || v], ['total', 'Total', sol],
-  ['pago.medio', 'Medio de pago'], ['pago.estado', 'Pago', v => v === 'pendiente' ? 'Pendiente' : 'Pagado'], ['pago.cuenta', 'Cuenta de destino'],
+  ['total', 'Total', sol],
+  ['pago.medio', 'Medio de pago'], ['pago.estado', 'Pago', v => v === 'pendiente' ? 'Pendiente' : 'Pagado'],
   ['entrega.modalidad', 'Modalidad de entrega'], ['entrega.responsable', 'Responsable de entrega'], ['entrega.hecha', 'Entrega', v => v ? 'Realizada' : 'Pendiente'],
   ['canal', 'Canal', v => CANALES[v] || v],
   ['vendedor', 'Vendedor'], ['obs', 'Observaciones']
@@ -607,8 +597,7 @@ async function cambiarAsientos(id, nuevos) {
   });
   if (!ok) throw new Error('Alguna de las butacas nuevas ya no está disponible. No se cambió nada.');
   const nueva = copia(v);
-  const esp = v.tipo === 'especial' ? Object.values(v.precios || {})[0] : 0;
-  const c = calcularPrecios(nuevos, v.tipo, esp);
+  const c = calcularPrecios(nuevos);
   nueva.asientos = nuevos; nueva.precios = c.precios; nueva.total = c.total; nueva.modificado = Date.now();
   const cambios = [{ campo: 'Butacas', antes: resumenAsientos(viejos), despues: resumenAsientos(nuevos) }];
   if (c.total !== v.total) cambios.push({ campo: 'Total', antes: sol(v.total), despues: sol(c.total) });
@@ -677,7 +666,7 @@ function montar() {
       <div class="mbarra">
         <div class="modo" id="modo" role="group" aria-label="Qué hacer al tocar una butaca"><button type="button" data-a="modo" data-v="vender">Vender</button><button type="button" data-a="modo" data-v="bloquear">Bloquear</button></div>
         <button type="button" class="btn mini" id="btnZoom" data-a="zoom"></button>
-        <span class="ira">Ir a <button type="button" class="sC" data-a="ir" data-v="C">C</button><button type="button" class="sB" data-a="ir" data-v="B">B</button><button type="button" class="sA" data-a="ir" data-v="A">A</button></span>
+        <span class="ira">Ir a <button type="button" class="sC" data-a="ir" data-v="C">Segundo piso</button><button type="button" class="sB" data-a="ir" data-v="B">Fondo</button><button type="button" class="sA" data-a="ir" data-v="A">Frente</button></span>
       </div>
       <p class="aviso" id="avisoMapa" hidden></p>
       <div class="mscroll" id="mscroll"><div class="mapa" id="mapa"></div></div>
@@ -700,7 +689,8 @@ function construirMapa() {
   let h = '';
   for (const blq of PLANO) {
     const sc = SECTORES[blq.sector];
-    h += `<div class="sec-tit s${blq.sector}" id="sec-${blq.sector}"><b>${sc.nombre}</b><span>${sc.zona}</span><em>${sol(sc.precio)}</em></div>`;
+    h += `<div class="sec-tit s${blq.sector}" id="sec-${blq.sector}"><b>${sc.nombre}</b><em>${sol(sc.precio)}</em></div>
+      <div class="sec-cap"><button type="button" class="btn mini" data-a="captura" data-v="${blq.sector}|venta">Captura para vender</button><button type="button" class="btn mini" data-a="captura" data-v="${blq.sector}|ocupacion">Captura de ocupación</button></div>`;
     for (const f of blq.filas) {
       if (!f) { h += '<div class="sep"></div>'; continue; }
       let c = '';
@@ -713,6 +703,7 @@ function construirMapa() {
   const m = $('#mapa'); m.innerHTML = h;
   // En vista completa las butacas son muy pequeñas para tocarlas: el toque acerca la zona.
   $('#mscroll').addEventListener('click', e => {
+    if (e.target.closest('[data-a]')) return;
     if (m.classList.contains('mini')) {
       let mejor = null, dist = 1e9;
       for (const b of $$('.b', m)) { const r = b.getBoundingClientRect(); const d = Math.hypot(r.left + r.width / 2 - e.clientX, r.top + r.height / 2 - e.clientY); if (d < dist) { dist = d; mejor = b; } }
@@ -784,7 +775,7 @@ function pintarChips() {
 }
 function pintarOcupacion(st) {
   const t = st.tot;
-  const seg = [['vendido', t.vendidas, 'Vendidas'], ['reservado', t.reservadas, 'Pago pendiente'], ['cortesia', t.cortesias, 'Cortesías'], ['cupo', t.cupoLibre, 'Bloqueadas'], ['libre', t.libres, 'Disponibles']];
+  const seg = [['vendido', t.vendidas, 'Vendidas'], ['reservado', t.reservadas, 'Pago pendiente'], ['cupo', t.cupoLibre, 'Bloqueadas'], ['libre', t.libres, 'Disponibles']];
   $('#ocuBar').innerHTML = seg.filter(x => x[0] !== 'libre' && x[1]).map(([c, n]) => `<i class="o-${c}" style="width:${n / TOTAL * 100}%"></i>`).join('');
   $('#ley').innerHTML = seg.map(([c, n, nom]) => `<li><span class="pt o-${c}"></span>${nom} <b>${n}</b></li>`).join('');
 }
@@ -796,8 +787,8 @@ function pintarMapa() {
     if (propia && e.vid === propia) est = 'libre';
     b.className = 'b s' + a.sector + ' e-' + est + (UI.sel.has(id) ? ' sel' : '');
     const quien = e.venta && e.venta.comprador ? ' (' + e.venta.comprador.nombre + ')' : '';
-    b.title = 'Sector ' + a.sector + ', fila ' + a.fila + ', butaca ' + a.num + ': ' +
-      ({ libre: 'disponible, ' + sol(a.precio), cupo: 'bloqueada (' + motivoDe(id) + ')', vendido: 'vendida' + quien, reservado: 'pago pendiente' + quien, cortesia: 'cortesía' + quien }[est]);
+    b.title = SECTORES[a.sector].nombre + ', fila ' + a.fila + ', butaca ' + a.num + ': ' +
+      ({ libre: 'disponible, ' + sol(a.precio), cupo: 'bloqueada (' + motivoDe(id) + ')', vendido: 'vendida' + quien, reservado: 'pago pendiente' + quien }[est]);
   }
 }
 function pintarSeleccion() {
@@ -810,7 +801,7 @@ function pintarSeleccion() {
   let txt, acc;
   if (UI.reubicar) {
     const v = S.ventas[UI.reubicar] || {};
-    const c = calcularPrecios(ids, v.tipo, v.tipo === 'especial' ? Object.values(v.precios || {})[0] : 0);
+    const c = calcularPrecios(ids);
     txt = `<b>${butacas(n)} para ${esc(v.codigo || '')}, ${sol(c.total)}</b>${n ? esc(resumenAsientos(ids)) : 'Elige al menos una butaca.'}`;
     acc = `<button type="button" class="btn" data-a="cancelarReubicar">Cancelar</button><button type="button" class="btn pri" data-a="guardarReubicar" ${n ? '' : 'disabled'}>Guardar cambio</button>`;
   } else {
@@ -830,12 +821,11 @@ function pintarSeleccion() {
   bar.innerHTML = `<div class="selbar-in"><div class="txt">${txt}</div><div class="acc">${acc}</div></div>`;
 }
 
-const FILTROS = [['activas', 'Todas'], ['pago', 'Pago pendiente'], ['entrega', 'Entrega pendiente'], ['cortesia', 'Cortesías'], ['virtual', 'Venta virtual'], ['fisica', 'Venta física'], ['anuladas', 'Anuladas']];
+const FILTROS = [['activas', 'Todas'], ['pago', 'Pago pendiente'], ['entrega', 'Entrega pendiente'], ['virtual', 'Venta virtual'], ['fisica', 'Venta física'], ['anuladas', 'Anuladas']];
 function etiquetas(v) {
   if (v.estado === 'anulada') return '<span class="et mal">Anulada</span>';
   let h = '';
-  if (v.tipo === 'cortesia') h += '<span class="et cort">Cortesía</span>';
-  else h += v.pago && v.pago.estado === 'pendiente' ? '<span class="et pend">Pago pendiente</span>' : '<span class="et ok">Pagada</span>';
+  h += v.pago && v.pago.estado === 'pendiente' ? '<span class="et pend">Pago pendiente</span>' : '<span class="et ok">Pagada</span>';
   h += v.entrega && v.entrega.hecha ? '<span class="et ok">Entregada</span>' : '<span class="et pend">Entrega pendiente</span>';
   h += '<span class="et cupo">' + (v.canal === 'fisica' ? 'Física' : 'Virtual') + '</span>';
   return h;
@@ -846,28 +836,27 @@ function pintarVentas() {
   const lista = Object.entries(S.ventas).filter(([id, v]) => {
     const act = v.estado === 'activa';
     if (UI.filtro === 'anuladas' ? act : !act) return false;
-    if (UI.filtro === 'pago' && !(v.tipo !== 'cortesia' && v.pago && v.pago.estado === 'pendiente')) return false;
+    if (UI.filtro === 'pago' && !(v.pago && v.pago.estado === 'pendiente')) return false;
     if (UI.filtro === 'entrega' && v.entrega && v.entrega.hecha) return false;
-    if (UI.filtro === 'cortesia' && v.tipo !== 'cortesia') return false;
     if ((UI.filtro === 'virtual' || UI.filtro === 'fisica') && (v.canal === 'fisica' ? 'fisica' : 'virtual') !== UI.filtro) return false;
     if (!q) return true;
     const c = v.comprador || {};
     return [v.codigo, c.nombre, c.doc, c.tel, v.vendedor, asientosDe(v).join(' '), resumenAsientos(asientosDe(v))].join(' ').toLowerCase().includes(q);
   }).sort((a, b) => (b[1].num || 0) - (a[1].num || 0));
   $('#listaVentas').innerHTML = lista.length ? lista.map(([id, v]) => {
-    const ids = asientosDe(v), cls = v.estado !== 'activa' ? 'anul' : v.tipo === 'cortesia' ? 'cort' : (v.pago && v.pago.estado === 'pendiente') ? 'pend' : '';
+    const ids = asientosDe(v), cls = v.estado !== 'activa' ? 'anul' : (v.pago && v.pago.estado === 'pendiente') ? 'pend' : '';
     return `<button type="button" class="venta ${cls}" data-a="detalle" data-v="${esc(id)}">
       <div class="l1"><span class="cod">${esc(v.codigo)}</span>${etiquetas(v)}</div>
       <div class="nom">${esc((v.comprador || {}).nombre)}</div>
       <div class="det">${entradas(ids.length)}, ${sol(v.total)}. ${esc(resumenAsientos(ids))}</div>
-      <div class="det">Vendió ${esc(v.vendedor)}${v.tipo !== 'cortesia' && v.pago ? ', ' + esc(v.pago.medio) : ''}</div>
+      <div class="det">Vendió ${esc(v.vendedor)}${v.pago ? ', ' + esc(v.pago.medio) : ''}</div>
     </button>`;
   }).join('') : `<p class="vacio">${q || UI.filtro !== 'activas' ? 'Ninguna venta coincide con la búsqueda o el filtro.' : 'Todavía no hay ventas. Elige butacas en el mapa para registrar la primera.'}</p>`;
 }
 
 function pintarResumen(st) {
   const t = st.tot, potencial = LISTA.reduce((s, a) => s + a.precio, 0);
-  const filaSec = (k, o) => `<tr><td>${k}</td><td>${o.total}</td><td>${o.vendidas}</td><td>${o.reservadas}</td><td>${o.cortesias}</td><td>${o.cupoLibre}</td><td>${o.libres}</td><td>${sol(o.cobrado)}</td></tr>`;
+  const filaSec = (k, o) => `<tr><td>${k}</td><td>${o.total}</td><td>${o.vendidas}</td><td>${o.reservadas}</td><td>${o.cupoLibre}</td><td>${o.libres}</td><td>${sol(o.cobrado)}</td></tr>`;
   const tabla = (obj, cab, fila) => {
     const ks = Object.keys(obj).sort((a, b) => obj[b].entradas - obj[a].entradas);
     return ks.length ? `<div class="tw"><table><thead><tr>${cab.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${ks.map(k => fila(k, obj[k])).join('')}</tbody></table></div>` : '<p class="nota">Sin ventas todavía.</p>';
@@ -880,13 +869,12 @@ function pintarResumen(st) {
       <div><strong>${sol(potencial)}</strong>si se vende todo a precio de lista</div>
     </div>
   </div>
-  <div class="caja"><h2>Ocupación por sector</h2>
-    <div class="tw"><table><thead><tr><th>Sector</th><th>Butacas</th><th>Vendidas</th><th>Pago pend.</th><th>Cortesías</th><th>Bloqueadas</th><th>Disponibles</th><th>Cobrado</th></tr></thead>
+  <div class="caja"><h2>Ocupación por zona</h2>
+    <div class="tw"><table><thead><tr><th>Zona</th><th>Butacas</th><th>Vendidas</th><th>Pago pend.</th><th>Bloqueadas</th><th>Disponibles</th><th>Cobrado</th></tr></thead>
     <tbody>${['A', 'B', 'C'].map(k => filaSec(SECTORES[k].nombre + ' (' + sol(SECTORES[k].precio) + ')', st.sec[k])).join('')}</tbody>
     <tfoot>${filaSec('Total', t)}</tfoot></table></div>
   </div>
   <div class="caja"><h2>Por medio de pago</h2>${tabla(st.medio, ['Medio', 'Entradas', 'Cobrado', 'Por cobrar'], (k, o) => `<tr><td>${esc(k)}</td><td>${o.entradas}</td><td>${sol(o.cobrado)}</td><td>${sol(o.porCobrar)}</td></tr>`)}</div>
-  <div class="caja"><h2>Por cuenta de destino</h2>${tabla(st.cuenta, ['Cuenta que recibió el pago', 'Entradas', 'Cobrado'], (k, o) => `<tr><td>${esc(k)}</td><td>${o.entradas}</td><td>${sol(o.cobrado)}</td></tr>`)}</div>
   <div class="caja"><h2>Entrega y canal</h2>
     <div class="cifras">
       <div><strong>${st.entOk}</strong>entradas entregadas</div>
@@ -942,8 +930,135 @@ function pintarGestion(st) {
 /* =====================================================================
    9. INTERFAZ: hojas (venta, detalle, anulación, confirmación)
    ===================================================================== */
+/* =====================================================================
+   CAPTURAS: imagen PNG de una zona, dibujada desde los datos del plano
+   modo 'venta'     -> solo resaltan las butacas disponibles (para ofrecerlas)
+   modo 'ocupacion' -> todas las butacas según su estado (para supervisar)
+   ===================================================================== */
+function trazoButaca(g, x, y, w) {
+  const r = w * 0.34, r2 = 5;
+  g.beginPath();
+  g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r);
+  g.lineTo(x + w, y + w - r2); g.quadraticCurveTo(x + w, y + w, x + w - r2, y + w);
+  g.lineTo(x + r2, y + w); g.quadraticCurveTo(x, y + w, x, y + w - r2);
+  g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
+}
+function dibujarButaca(g, x, y, w, e, num, sc, modo, fuente) {
+  let relleno, texto = null, borde = null, trama = false, dash = false;
+  if (modo === 'venta') {
+    if (e === 'libre') { relleno = sc.c; texto = '#FFFFFF'; }
+    else relleno = '#E6E3EE';
+  } else if (e === 'libre') { relleno = sc.t; borde = sc.b; texto = sc.d; }
+  else if (e === 'vendido') { relleno = '#241A3A'; texto = '#FFFFFF'; }
+  else if (e === 'reservado') { relleno = '#F5B400'; borde = '#C28F00'; texto = '#241A3A'; }
+  else { relleno = '#FFFFFF'; borde = '#51476B'; texto = '#241A3A'; trama = true; dash = true; }
+  trazoButaca(g, x, y, w); g.fillStyle = relleno; g.fill();
+  if (trama) {
+    g.save(); trazoButaca(g, x, y, w); g.clip(); g.strokeStyle = '#B4AECB'; g.lineWidth = 3;
+    for (let k = -w; k < 2 * w; k += 10) { g.beginPath(); g.moveTo(x + k, y + w); g.lineTo(x + k + w, y); g.stroke(); }
+    g.restore();
+  }
+  if (borde) { trazoButaca(g, x, y, w); g.strokeStyle = borde; g.lineWidth = 2.5; g.setLineDash(dash ? [7, 5] : []); g.stroke(); g.setLineDash([]); }
+  if (texto) { g.fillStyle = texto; g.font = '700 ' + Math.round(w * 0.46) + 'px ' + fuente; g.textAlign = 'center'; g.fillText(String(num), x + w / 2, y + w / 2 + w * 0.16); }
+}
+async function generarCaptura(sector, modo) {
+  const FUENTE = '"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif';
+  try {
+    if (document.fonts && document.fonts.load) await Promise.race([Promise.all([document.fonts.load('700 30px "Barlow Semi Condensed"'), document.fonts.load('500 26px "Barlow Semi Condensed"')]), new Promise(r => setTimeout(r, 900))]);
+  } catch (e) { /* si la tipografía no carga se usa la de respaldo */ }
+  const sc = SECTORES[sector], blq = PLANO.find(b => b.sector === sector), st = estadisticas().sec[sector];
+  const CEL = 52, GAP = 6, STEP = CEL + GAP, LAB = 76, PAD = 48;
+  let cMin = 99, cMax = 0;
+  for (const f of blq.filas) if (f) for (const [col, , cant] of f[1]) { cMin = Math.min(cMin, col + blq.off); cMax = Math.max(cMax, col + cant - 1 + blq.off); }
+  const W = 2 * PAD + 2 * LAB + (cMax - cMin + 1) * STEP - GAP;
+  const ocup = modo === 'ocupacion';
+  const gridY = 300 + (ocup ? 130 : 0) + 24;
+  const gridH = blq.filas.reduce((h, f) => h + (f ? STEP : STEP / 2), 0);
+  const H = gridY + gridH + (sector === 'A' ? 110 : 70) + (ocup ? 70 : 130);
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, H);
+  // Cabecera
+  g.fillStyle = '#241A3A'; g.fillRect(0, 0, W, 150);
+  g.textAlign = 'left'; g.fillStyle = '#F5B400'; g.font = '700 34px ' + FUENTE;
+  g.fillText((EVENTO.nombre + '  ·  ' + EVENTO.subtitulo).toUpperCase(), PAD, 62);
+  g.fillStyle = '#CFC8E4'; g.font = '500 26px ' + FUENTE; g.fillText(EVENTO.lugar + ', ' + EVENTO.fecha, PAD, 106);
+  g.textAlign = 'right'; g.fillStyle = '#FFFFFF'; g.font = '700 30px ' + FUENTE;
+  g.fillText(ocup ? 'OCUPACIÓN DE LA ZONA' : 'BUTACAS DISPONIBLES', W - PAD, 62);
+  // Zona, precio y cifras
+  g.textAlign = 'left'; g.font = '700 56px ' + FUENTE;
+  const nom = sc.nombre.toUpperCase(), bw = g.measureText(nom).width + 64;
+  g.fillStyle = sc.c; trazoRect(g, PAD, 180, bw, 88, 16); g.fill();
+  g.fillStyle = '#FFFFFF'; g.fillText(nom, PAD + 32, 180 + 62);
+  g.font = '500 26px ' + FUENTE; g.fillStyle = '#51476B'; g.fillText(sol(sc.precio) + ' por entrada', PAD + bw + 28, 180 + 58);
+  const ocupadas = st.vendidas + st.reservadas;
+  g.textAlign = 'right'; g.fillStyle = sc.c; g.font = '700 60px ' + FUENTE;
+  g.fillText(st.libres + (st.libres === 1 ? ' DISPONIBLE' : ' DISPONIBLES'), W - PAD, 232);
+  g.fillStyle = '#51476B'; g.font = '500 26px ' + FUENTE;
+  g.fillText(ocup ? 'de ' + st.total + ' butacas, ' + ocupadas + ' ocupadas (' + Math.round(ocupadas / st.total * 100) + ' %)' : 'de ' + st.total + ' butacas', W - PAD, 272);
+  // Barra de distribución (solo ocupación)
+  if (ocup) {
+    const segs = [['Disponibles', st.libres, sc.t, sc.b], ['Vendidas', st.vendidas, '#241A3A', null], ['Pago pendiente', st.reservadas, '#F5B400', '#C28F00'], ['Bloqueadas', st.cupoLibre, '#D5D1E2', '#51476B']];
+    const bx = PAD, bwid = W - 2 * PAD; let x = bx;
+    g.fillStyle = '#E7E4F0'; trazoRect(g, bx, 318, bwid, 30, 8); g.fill();
+    g.save(); trazoRect(g, bx, 318, bwid, 30, 8); g.clip();
+    for (const [, n, c] of segs) { const w = n / st.total * bwid; g.fillStyle = c; g.fillRect(x, 318, w, 30); x += w; }
+    g.restore();
+    g.font = '600 27px ' + FUENTE; g.textAlign = 'left'; let lx = PAD;
+    for (const [nombre, n, c, b] of segs) {
+      g.fillStyle = c; trazoRect(g, lx, 376, 28, 28, 7); g.fill();
+      if (b) { g.strokeStyle = b; g.lineWidth = 2.5; trazoRect(g, lx, 376, 28, 28, 7); g.stroke(); }
+      g.fillStyle = '#241A3A'; const t = nombre + ' ' + n; g.fillText(t, lx + 38, 400); lx += 38 + g.measureText(t).width + 42;
+    }
+  }
+  // Butacas
+  let y = gridY;
+  for (const f of blq.filas) {
+    if (!f) { y += STEP / 2; continue; }
+    g.font = '700 26px ' + FUENTE; g.textAlign = 'center'; g.fillStyle = '#51476B';
+    g.fillText(f[0], PAD + LAB / 2, y + CEL / 2 + 9); g.fillText(f[0], W - PAD - LAB / 2, y + CEL / 2 + 9);
+    for (const [col, n0, cant] of f[1]) for (let i = 0; i < cant; i++) {
+      const x = PAD + LAB + (col + i + blq.off - cMin) * STEP;
+      dibujarButaca(g, x, y, CEL, estadoAsiento(sector + '-' + f[0] + '-' + (n0 + i)).e, n0 + i, sc, modo, FUENTE);
+    }
+    y += STEP;
+  }
+  // Escenario
+  g.textAlign = 'center';
+  if (sector === 'A') {
+    g.fillStyle = '#241A3A'; trazoRect(g, PAD + LAB, y + 14, W - 2 * (PAD + LAB), 58, 10); g.fill();
+    g.fillStyle = '#FFFFFF'; g.font = '700 28px ' + FUENTE; g.fillText('ESCENARIO', W / 2, y + 52);
+    y += 90;
+  } else { g.fillStyle = '#857F9B'; g.font = '600 26px ' + FUENTE; g.fillText('↓ Hacia el escenario', W / 2, y + 38); y += 62; }
+  // Leyenda (venta) y pie
+  if (!ocup) {
+    g.textAlign = 'left'; g.font = '600 27px ' + FUENTE; let lx = PAD; const ly = y + 30;
+    for (const [c, t] of [[sc.c, 'Disponible'], ['#E6E3EE', 'No disponible (vendida, en proceso o bloqueada)']]) {
+      g.fillStyle = c; trazoRect(g, lx, ly - 24, 30, 30, 8); g.fill(); g.fillStyle = '#241A3A'; g.fillText(t, lx + 42, ly); lx += 42 + g.measureText(t).width + 44;
+    }
+  }
+  const ahora = new Date();
+  g.textAlign = 'left'; g.fillStyle = '#857F9B'; g.font = '500 23px ' + FUENTE;
+  g.fillText('Actualizado ' + ahora.toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) + '  ·  Generado por ' + U.nombre, PAD, H - 26);
+  const blob = await new Promise((ok, mal) => cv.toBlob(b => b ? ok(b) : mal(new Error('el navegador no pudo crear la imagen')), 'image/png'));
+  const hhmm = String(ahora.getHours()).padStart(2, '0') + String(ahora.getMinutes()).padStart(2, '0');
+  return { blob, url: URL.createObjectURL(blob), nombre: sc.nombre.toLowerCase().replace(/\s+/g, '-') + (ocup ? '-ocupacion-' : '-disponibles-') + hhmm + '.png' };
+}
+function trazoRect(g, x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r); g.lineTo(x + w, y + h - r);
+  g.quadraticCurveTo(x + w, y + h, x + w - r, y + h); g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r); g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
+}
+function hojaImagen(m) {
+  let compartir = false;
+  try { compartir = !!(navigator.canShare && navigator.share && navigator.canShare({ files: [new File([m.blob], m.nombre, { type: 'image/png' })] })); } catch (e) { compartir = false; }
+  return `<header class="hoja-cab"><h2>${esc(m.titulo)}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
+    <div class="hoja-cuerpo"><div class="cap-wrap"><img class="cap-img" src="${m.url}" alt="${esc(m.titulo)}"></div>
+      <p class="nota">${compartir ? 'Compártela por WhatsApp u otra app, o guárdala en el teléfono.' : 'Mantén presionada la imagen para guardarla o compartirla, o usa Descargar.'} Se guarda en tamaño completo: al abrirla puedes ampliar para ver los números.</p></div>
+    <footer class="hoja-pie"><button type="button" class="btn" data-a="cerrar">Cerrar</button><button type="button" class="btn ${compartir ? '' : 'pri'}" data-a="descargarImagen">Descargar</button>${compartir ? '<button type="button" class="btn pri" data-a="compartirImagen">Compartir</button>' : ''}</footer>`;
+}
+
 function abrir(modal) { UI.modal = modal; pintarModal(); }
-function cerrar() { UI.modal = null; $('#modal').innerHTML = ''; }
+function cerrar() { if (UI.modal && UI.modal.url) URL.revokeObjectURL(UI.modal.url); UI.modal = null; $('#modal').innerHTML = ''; }
 function pintarModal() {
   const m = UI.modal; if (!m) return;
   let h = '';
@@ -955,6 +1070,7 @@ function pintarModal() {
   else if (m.tipo === 'usuario') h = hojaUsuario();
   else if (m.tipo === 'bloquear') h = hojaBloquear(m);
   else if (m.tipo === 'texto') h = hojaTexto(m);
+  else if (m.tipo === 'imagen') h = hojaImagen(m);
   const cuerpo = $('#modal .hoja-cuerpo'), y = cuerpo ? cuerpo.scrollTop : 0;
   $('#modal').innerHTML = `<div class="velo" data-velo><div class="hoja" role="dialog" aria-modal="true">${h}</div></div>`;
   if (m.tipo === 'detalle' && y) $('#modal .hoja-cuerpo').scrollTop = y;
@@ -964,24 +1080,18 @@ const opcion = (nombre, valor, texto, marcado) => `<label><input type="radio" na
 function hojaVenta(v, m) {
   const ed = !!v, ids = ed ? asientosDe(v) : m.ids;
   const c = (v && v.comprador) || {}, p = (v && v.pago) || {}, en = (v && v.entrega) || {};
-  const tipo = ed ? v.tipo : 'general', esp = ed && v.tipo === 'especial' ? Object.values(v.precios || {})[0] : '';
-  const medios = MEDIOS.includes(p.medio) || !p.medio || p.medio === 'No aplica' ? MEDIOS : [p.medio, ...MEDIOS];
+  const medios = MEDIOS.includes(p.medio) || !p.medio ? MEDIOS : [p.medio, ...MEDIOS];
   const mods = MODALIDADES.includes(en.modalidad) || !en.modalidad ? MODALIDADES : [en.modalidad, ...MODALIDADES];
   const vendedores = [...new Set([U.nombre, ...Object.values(S.usuarios).map(u => u.nombre), ...Object.values(S.ventas).map(x => x.vendedor), ...Object.values(S.ventas).map(x => (x.entrega || {}).responsable)].filter(Boolean))];
-  const cuentas = [...new Set(Object.values(S.ventas).map(x => (x.pago || {}).cuenta).filter(Boolean))];
   const canal = ed ? (v.canal === 'fisica' ? 'fisica' : 'virtual') : (m.deCupo ? 'fisica' : 'virtual');
   return `<form data-f="${ed ? 'editar' : 'venta'}" novalidate>
     <header class="hoja-cab"><h2>${ed ? 'Editar venta ' + esc(v.codigo) : m.deCupo ? 'Vender butacas bloqueadas' : 'Registrar venta'}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
     <div class="hoja-cuerpo">
       <p class="res-but"><b>${entradas(ids.length)}</b>${esc(resumenAsientos(ids))}</p>
+      <p class="total">Total <output></output></p>
       <fieldset><legend>Canal</legend>
         <div class="ops">${Object.entries(CANALES).map(([k, n]) => opcion('canal', k, n, canal === k)).join('')}</div>
         ${!ed && m.deCupo ? '<p class="nota">Son butacas bloqueadas' + (m.bloqueo ? ' (' + esc(m.bloqueo) + ')' : '') + ', por eso se propone venta física.</p>' : ''}
-      </fieldset>
-      <fieldset><legend>Tipo de entrada</legend>
-        <div class="ops">${Object.entries(TIPOS).map(([k, n]) => opcion('tipo', k, n, tipo === k)).join('')}</div>
-        <label class="campo" data-solo="especial">Precio por entrada (S/)<input type="number" name="precioEsp" min="0" step="0.5" inputmode="decimal" value="${esc(esp)}"></label>
-        <p class="total">Total <output></output></p>
       </fieldset>
       <fieldset><legend>Comprador</legend>
         <label class="campo">Nombre y apellidos<input type="text" name="nombre" autocomplete="off" required value="${esc(c.nombre)}"></label>
@@ -990,13 +1100,9 @@ function hojaVenta(v, m) {
           <label class="campo">Teléfono o WhatsApp<input type="tel" name="tel" autocomplete="off" value="${esc(c.tel)}"></label>
         </div>
       </fieldset>
-      <fieldset data-oculto="cortesia"><legend>Pago</legend>
+      <fieldset><legend>Pago</legend>
         <div class="ops">${opcion('pagoEstado', 'pagado', 'Pagado', p.estado !== 'pendiente')}${opcion('pagoEstado', 'pendiente', 'Pendiente (separa las butacas)', p.estado === 'pendiente')}</div>
-        <div class="dos">
-          <label class="campo">Medio de pago<select name="medio">${medios.map(x => `<option ${p.medio === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
-          <label class="campo">Cuenta de destino (quién recibió el pago)<input type="text" name="cuenta" list="dlCta" autocomplete="off" value="${esc(p.cuenta)}"></label>
-        </div>
-        <datalist id="dlCta">${cuentas.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+        <label class="campo">Medio de pago<select name="medio">${medios.map(x => `<option ${p.medio === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
       </fieldset>
       <fieldset><legend>Entrega</legend>
         <label class="campo">Modalidad<select name="modalidad">${mods.map(x => `<option ${en.modalidad === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
@@ -1017,20 +1123,16 @@ function hojaVenta(v, m) {
 function actualizarFormVenta(f) {
   if (!f) return;
   const m = UI.modal, ids = m.tipo === 'editar' ? asientosDe(S.ventas[m.id]) : m.ids;
-  const tipo = f.elements.tipo.value;
-  $('[data-solo=especial]', f).hidden = tipo !== 'especial';
-  $('[data-oculto=cortesia]', f).hidden = tipo === 'cortesia';
-  $('output', f).textContent = sol(calcularPrecios(ids, tipo, f.elements.precioEsp.value).total);
+  $('output', f).textContent = sol(m.tipo === 'editar' ? S.ventas[m.id].total : calcularPrecios(ids).total);
 }
 function leerFormVenta(f) {
   const e = f.elements, err = $('.err', f);
-  const d = { tipo: e.tipo.value, precioEsp: e.precioEsp.value, nombre: e.nombre.value.trim(), doc: e.doc.value.trim(), tel: e.tel.value.trim(),
-    pagoEstado: e.pagoEstado.value, medio: e.medio.value, cuenta: e.cuenta.value.trim(), modalidad: e.modalidad.value, responsable: e.responsable.value.trim(), entregada: e.entregada.checked, canal: e.canal.value,
+  const d = { nombre: e.nombre.value.trim(), doc: e.doc.value.trim(), tel: e.tel.value.trim(),
+    pagoEstado: e.pagoEstado.value, medio: e.medio.value, modalidad: e.modalidad.value, responsable: e.responsable.value.trim(), entregada: e.entregada.checked, canal: e.canal.value,
     vendedor: e.vendedor.value.trim(), obs: e.obs.value.trim() };
   let msg = '';
   if (!d.nombre) msg = 'Falta el nombre del comprador.';
   else if (!d.vendedor) msg = 'Falta indicar quién hizo la venta.';
-  else if (d.tipo === 'especial' && (d.precioEsp === '' || Number(d.precioEsp) < 0 || isNaN(Number(d.precioEsp)))) msg = 'Indica el precio especial por entrada.';
   err.hidden = !msg; err.textContent = msg;
   if (msg) { err.scrollIntoView({ block: 'center' }); return null; }
   return d;
@@ -1045,11 +1147,10 @@ function hojaDetalle(id) {
       <dt>Comprador</dt><dd>${esc(c.nombre)}</dd>
       <dt>DNI</dt><dd>${esc(c.doc) || 'Sin registrar'}</dd>
       <dt>Teléfono</dt><dd>${esc(c.tel) || 'Sin registrar'}</dd>
-      <dt>Entradas</dt><dd>${ids.length}, ${esc(TIPOS[v.tipo] || v.tipo)}</dd>
+      <dt>Entradas</dt><dd>${ids.length}</dd>
       <dt>Butacas</dt><dd>${esc(resumenAsientos(ids))}</dd>
       <dt>Total</dt><dd>${sol(v.total)}</dd>
-      ${v.tipo !== 'cortesia' ? `<dt>Pago</dt><dd>${esc(p.medio)}, ${p.estado === 'pendiente' ? 'pendiente' : 'pagado' + (p.fecha ? ' el ' + fch(p.fecha) : '')}</dd>
-      <dt>Cuenta de destino</dt><dd>${esc(p.cuenta) || 'Sin indicar'}</dd>` : ''}
+      <dt>Pago</dt><dd>${esc(p.medio)}, ${p.estado === 'pendiente' ? 'pendiente' : 'pagado' + (p.fecha ? ' el ' + fch(p.fecha) : '')}</dd>
       <dt>Entrega</dt><dd>${esc(en.modalidad)}, ${en.hecha ? 'realizada' + (en.fecha ? ' el ' + fch(en.fecha) : '') : 'pendiente'}</dd>
       <dt>Responsable de entrega</dt><dd>${esc(en.responsable) || 'Sin asignar'}</dd>
       <dt>Vendedor</dt><dd>${esc(v.vendedor)}</dd>
@@ -1060,7 +1161,7 @@ function hojaDetalle(id) {
     </dl>
     ${act ? `<div class="accs">
       <button type="button" class="btn pri" data-a="alternarEntrega" data-v="${esc(id)}">${en.hecha ? 'Marcar entrega como pendiente' : 'Marcar como entregada'}</button>
-      ${v.tipo !== 'cortesia' && p.estado === 'pendiente' ? `<button type="button" class="btn pri" data-a="marcarPagada" data-v="${esc(id)}">Marcar como pagada</button>` : ''}
+      ${p.estado === 'pendiente' ? `<button type="button" class="btn pri" data-a="marcarPagada" data-v="${esc(id)}">Marcar como pagada</button>` : ''}
       <button type="button" class="btn" data-a="editar" data-v="${esc(id)}">Editar datos</button>
       <button type="button" class="btn" data-a="reubicar" data-v="${esc(id)}">Cambiar butacas</button>
       <button type="button" class="btn" data-a="copiarResumen" data-v="${esc(id)}">Copiar resumen</button>
@@ -1160,8 +1261,8 @@ function textoResumen(v) {
   const ids = asientosDe(v), p = v.pago || {};
   return [EVENTO.nombre + ': ' + EVENTO.subtitulo, EVENTO.lugar + ', ' + EVENTO.fecha, '',
     'Venta ' + v.codigo + ' a nombre de ' + (v.comprador || {}).nombre,
-    entradas(ids.length) + ' (' + (TIPOS[v.tipo] || v.tipo) + ')', resumenAsientos(ids),
-    v.tipo === 'cortesia' ? 'Cortesía' : 'Total: ' + sol(v.total) + ' (' + p.medio + ', ' + (p.estado === 'pendiente' ? 'pago pendiente' : 'pagado') + ')',
+    entradas(ids.length), resumenAsientos(ids),
+    'Total: ' + sol(v.total) + ' (' + p.medio + ', ' + (p.estado === 'pendiente' ? 'pago pendiente' : 'pagado') + ')',
     'Entrega: ' + (v.entrega || {}).modalidad].join('\n');
 }
 const A = {
@@ -1177,6 +1278,25 @@ const A = {
     if (!UI.sel.size) return;
     const ids = ordenar(UI.sel), deCupo = UI.selTipo === 'cupo';
     abrir({ tipo: 'venta', ids, deCupo, bloqueo: deCupo ? [...new Set(ids.map(motivoDe))].join(', ') : '' });
+  },
+  async captura(b) {
+    const [sector, modo] = b.dataset.v.split('|');
+    b.disabled = true;
+    try {
+      const r = await generarCaptura(sector, modo);
+      abrir({ tipo: 'imagen', titulo: (modo === 'venta' ? 'Para vender: ' : 'Ocupación: ') + SECTORES[sector].nombre, url: r.url, blob: r.blob, nombre: r.nombre });
+    } catch (e) { toast('No se pudo crear la imagen: ' + (e.message || e), 'error'); }
+    finally { b.disabled = false; }
+  },
+  descargarImagen() {
+    const m = UI.modal; if (!m || !m.url) return;
+    const a = document.createElement('a'); a.href = m.url; a.download = m.nombre; document.body.appendChild(a); a.click(); a.remove();
+    toast('Descargando ' + m.nombre);
+  },
+  async compartirImagen() {
+    const m = UI.modal; if (!m || !m.blob) return;
+    try { await navigator.share({ files: [new File([m.blob], m.nombre, { type: 'image/png' })], title: m.titulo }); }
+    catch (e) { if (!e || e.name !== 'AbortError') toast('No se pudo compartir. Usa Descargar o mantén presionada la imagen.', 'error'); }
   },
   enviar(b) { const f = b.closest('form'); if (f && F[f.dataset.f]) F[f.dataset.f](f); },
   modo(b) { if (UI.modo === b.dataset.v) return; UI.modo = b.dataset.v; limpiarSel(); pintar(); },
@@ -1223,16 +1343,16 @@ const A = {
   },
   async confirmarSi(b) { const m = UI.modal; b.disabled = true; await m.alAceptar(); cerrar(); pintar(); },
   exportarButacas() {
-    const cab = ['ID Asiento', 'Sector', 'Fila', 'Número de Asiento', 'Precio', 'Estado', 'Comprador', 'DNI', 'Teléfono', 'Fecha de Pago', 'Observaciones',
-      'Código de venta', 'Tipo de entrada', 'Precio cobrado', 'Medio de pago', 'Pago', 'Cuenta de destino', 'Modalidad de entrega', 'Responsable de entrega', 'Entregada', 'Vendedor', 'Canal', 'Bloqueo', 'Fecha de registro'];
-    const nomE = { libre: 'Disponible', cupo: 'Bloqueado', vendido: 'Vendido', reservado: 'Pago pendiente', cortesia: 'Cortesía' };
+    const cab = ['ID Asiento', 'Zona', 'Fila', 'Número de Asiento', 'Precio', 'Estado', 'Comprador', 'DNI', 'Teléfono', 'Fecha de Pago', 'Observaciones',
+      'Código de venta', 'Precio cobrado', 'Medio de pago', 'Pago', 'Modalidad de entrega', 'Responsable de entrega', 'Entregada', 'Vendedor', 'Canal', 'Bloqueo', 'Fecha de registro'];
+    const nomE = { libre: 'Disponible', cupo: 'Bloqueado', vendido: 'Vendido', reservado: 'Pago pendiente' };
     const fx = ts => ts ? new Date(ts).toLocaleString('es-PE') : '';
     const filas = [...LISTA].sort((a, b) => a.sector.localeCompare(b.sector) || FILAS[a.sector].indexOf(b.fila) - FILAS[a.sector].indexOf(a.fila) || a.num - b.num).map(a => {
       const e = estadoAsiento(a.id), v = e.venta, r = S.asientos[a.id] || {};
-      const base = ['Sector ' + a.id, 'Sector ' + a.sector, a.fila, a.num, a.precio, nomE[e.e]];
-      if (!v) return [...base, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', r.p ? motivoDe(a.id) : '', ''];
+      const base = [SECTORES[a.sector].nombre + '-' + a.fila + '-' + a.num, SECTORES[a.sector].nombre, a.fila, a.num, a.precio, nomE[e.e]];
+      if (!v) return [...base, '', '', '', '', '', '', '', '', '', '', '', '', '', '', r.p ? motivoDe(a.id) : '', ''];
       const c = v.comprador || {}, p = v.pago || {}, en = v.entrega || {};
-      return [...base, c.nombre, c.doc, c.tel, fx(p.fecha), v.obs, v.codigo, TIPOS[v.tipo] || v.tipo, precioDe(v, a.id), p.medio, p.estado === 'pendiente' ? 'Pendiente' : 'Pagado', p.cuenta,
+      return [...base, c.nombre, c.doc, c.tel, fx(p.fecha), v.obs, v.codigo, precioDe(v, a.id), p.medio, p.estado === 'pendiente' ? 'Pendiente' : 'Pagado',
         en.modalidad, en.responsable, en.hecha ? 'Sí' : 'No', v.vendedor, v.canal === 'fisica' ? 'Venta física' : 'Venta virtual', r.p ? motivoDe(a.id) : '', fx(v.creado)];
     });
     descargar('control-entradas-saqra.csv', csv([cab, ...filas]));
@@ -1264,10 +1384,9 @@ const F = {
   },
   async editar(f) {
     const d = leerFormVenta(f); if (!d) return;
-    const id = UI.modal.id, v = S.ventas[id], n = copia(v), ids = asientosDe(v), c = calcularPrecios(ids, d.tipo, d.precioEsp), cort = d.tipo === 'cortesia';
-    n.tipo = d.tipo; n.precios = c.precios; n.total = c.total;
+    const id = UI.modal.id, v = S.ventas[id], n = copia(v), ids = asientosDe(v);
     n.comprador = { nombre: d.nombre, doc: d.doc, tel: d.tel };
-    n.pago = Object.assign({}, v.pago, cort ? { medio: 'No aplica', estado: 'pagado', cuenta: '' } : { medio: d.medio, estado: d.pagoEstado, cuenta: d.cuenta });
+    n.pago = Object.assign({}, v.pago, { medio: d.medio, estado: d.pagoEstado });
     n.entrega = Object.assign({}, v.entrega, { modalidad: d.modalidad, responsable: d.responsable, hecha: d.entregada });
     n.canal = d.canal;
     n.vendedor = d.vendedor; n.obs = d.obs;
@@ -1306,7 +1425,7 @@ function depurarSeleccion() {
 }
 
 document.addEventListener('click', e => {
-  if (e.target.matches('[data-velo]')) { const m = UI.modal; if (m && (m.tipo === 'detalle' || m.tipo === 'confirmar')) cerrar(); return; }
+  if (e.target.matches('[data-velo]')) { const m = UI.modal; if (m && (m.tipo === 'detalle' || m.tipo === 'confirmar' || m.tipo === 'imagen')) cerrar(); return; }
   const b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
   const fn = A[b.dataset.a]; if (fn) fn(b, e);
 });
@@ -1317,7 +1436,7 @@ document.addEventListener('input', e => {
   if (t.form && (t.form.dataset.f === 'venta' || t.form.dataset.f === 'editar')) actualizarFormVenta(t.form);
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && UI.modal && (UI.modal.tipo === 'detalle' || UI.modal.tipo === 'confirmar')) cerrar();
+  if (e.key === 'Escape' && UI.modal && (UI.modal.tipo === 'detalle' || UI.modal.tipo === 'confirmar' || UI.modal.tipo === 'imagen')) cerrar();
   if (e.key === 'Enter' && e.target.matches && e.target.matches('#modal form input:not([type=checkbox]):not([type=radio])')) {
     e.preventDefault(); const f = e.target.form; if (f && F[f.dataset.f]) F[f.dataset.f](f);
   }
@@ -1349,7 +1468,7 @@ function puerta(html, alEnviar) {
 async function sembrarDemo() {
   const yo = U; U = { uid: 'excel', nombre: 'Excel de control' };
   try {
-    await crearVenta({ asientos: [7, 8, 9, 10, 11, 12, 13, 14, 15].map(n => 'A-G-' + n), tipo: 'general', nombre: 'Venta previa (Excel de control)',
+    await crearVenta({ asientos: [7, 8, 9, 10, 11, 12, 13, 14, 15].map(n => 'A-G-' + n), nombre: 'Venta previa (Excel de control)',
       pagoEstado: 'pagado', pagoFecha: null, medio: 'Sin registrar', modalidad: 'Sin registrar', entregada: false, vendedor: 'Sin registrar',
       obs: 'Venta importada del Excel de control.' });
   } finally { U = yo; }
