@@ -118,6 +118,27 @@ body.con-sel main{padding-bottom:calc(var(--nav) + 150px)}
 .b.e-reservado{background:var(--maiz);border-color:#C28F00;color:var(--tinta)}
 .b.e-cupo{background:repeating-linear-gradient(135deg,#fff 0 3px,#D5D1E2 3px 6px);border:1.5px dashed var(--tinta2);color:var(--tinta)}
 .b.sel{background:var(--c);border:1.5px solid #fff;color:#fff;box-shadow:0 0 0 2.5px var(--tinta)}
+.b{position:relative}
+.grp{grid-row:1;align-self:stretch;justify-self:stretch;margin:-2px;border:2px solid var(--mc);border-radius:8px;pointer-events:none;z-index:1;box-sizing:border-box}
+.grp.bq{border-style:dashed}
+.mapa.mini .grp{margin:-1px;border-width:1px;border-radius:3px}
+.b.libera{outline:2px dashed #C2187A;outline-offset:1px;opacity:.6}
+.b.nueva::after,.b.libera::after{position:absolute;top:-6px;right:-6px;width:15px;height:15px;border-radius:50%;color:#fff;font:700 12px/15px var(--fc);text-align:center;pointer-events:none;z-index:3}
+.b.nueva::after{content:'+';background:var(--tinta)}
+.b.libera::after{content:'\2212';background:#C2187A}
+.mapa.mini .b.nueva::after,.mapa.mini .b.libera::after{display:none}
+.opcion{display:block;width:100%;text-align:left;border:1.5px solid var(--linea);background:var(--papel);border-radius:10px;padding:12px 14px;margin-top:10px}
+.opcion b{display:block;font:700 18px var(--fc)}
+.opcion span{color:var(--tinta2);font-size:14.5px}
+.adj-lista{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.adj-item{position:relative;width:96px;height:96px;border:1px solid var(--linea);border-radius:8px;overflow:hidden;background:#fff;padding:0;display:grid;place-items:center;font-size:12px;color:var(--tinta2);text-align:center}
+.adj-item img{width:100%;height:100%;object-fit:cover}
+.adj-x{position:absolute;top:3px;right:3px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(36,26,58,.88);color:#fff;font-size:17px;line-height:1}
+.adj-btn{display:inline-block;cursor:pointer}
+.nota-imp{margin-top:8px;padding:8px 10px;border-radius:6px;background:#FCE4F1;border-left:5px solid #C2187A;color:#5B0B38;font-size:15px;line-height:1.35;font-weight:500}
+.nota-imp b{display:block;font:700 12.5px var(--fc);letter-spacing:.8px;color:#C2187A}
+.nota-imp.grande{font-size:16px;margin:0 0 12px}
+.et.imp{background:#FCE4F1;color:#8C0E57}
 .mapa.mini{cursor:pointer}
 .mapa.mini .b{font-size:0;border-width:1px;border-radius:2px;pointer-events:none}
 .mapa.mini .b.sel{box-shadow:0 0 0 1.5px var(--tinta)}
@@ -446,13 +467,15 @@ async function copiarTexto(txt) {
      bloqueos/{id}   -> {motivo, por, uid, ts}: cada tanda de butacas bloqueadas
      ventas/{id}     -> la venta completa
      historial/{id}  -> registro de cada acción
+     adjuntos/{venta}/{k}     -> {ts, por, kb}: lista liviana de comprobantes de cada venta
+     comprobantes/{venta}/{k} -> {d, w, h}: la imagen (JPEG reducido); se lee solo al abrir la venta
      usuarios/{dispositivo} -> {nombre, ult}
    Todo cuelga de /g_{CÓDIGO DEL GRUPO}/ (ver reglas de Firebase).
      numeros/n{N}    -> idVenta: reserva de cada N.º de venta (evita repetidos; no se reutiliza)
    ===================================================================== */
 function almacenFirebase(fdb, raiz, alCambiar) {
   const R = ruta => fdb.ref(raiz + '/' + ruta);
-  const cache = { asientos: {}, ventas: {}, historial: {}, usuarios: {}, bloqueos: {} };
+  const cache = { asientos: {}, ventas: {}, historial: {}, usuarios: {}, bloqueos: {}, adjuntos: {} };
   const oir = (clave, ref) => ref.on('value', s => { cache[clave] = s.val() || {}; alCambiar(cache); },
     e => toast('No se pudo leer "' + clave + '": ' + e.message, 'error'));
   oir('asientos', R('asientos'));
@@ -460,11 +483,13 @@ function almacenFirebase(fdb, raiz, alCambiar) {
   oir('historial', R('historial').limitToLast(600));
   oir('usuarios', R('usuarios'));
   oir('bloqueos', R('bloqueos'));
+  oir('adjuntos', R('adjuntos'));
   fdb.ref('.info/connected').on('value', s => { EN_LINEA = !!s.val(); pintarChips(); });
   return {
     async txAsientos(fn) { const r = await R('asientos').transaction(cur => fn(cur || {})); return !!r.committed; },
     async txNumeros(fn) { const r = await R('numeros').transaction(cur => fn(cur || {})); return !!r.committed; },
     async actualizar(obj) { await fdb.ref(raiz).update(obj); },
+    async leer(ruta) { const sn = await R(ruta).get(); return sn.val(); },
     nuevoId() { return R('historial').push().key; }
   };
 }
@@ -472,7 +497,7 @@ function almacenFirebase(fdb, raiz, alCambiar) {
 /* =====================================================================
    5. ESTADO
    ===================================================================== */
-let S = { asientos: {}, ventas: {}, historial: {}, usuarios: {}, bloqueos: {} };
+let S = { asientos: {}, ventas: {}, historial: {}, usuarios: {}, bloqueos: {}, adjuntos: {} };
 let U = null;            // {uid, nombre}: el nombre queda como responsable de cada acción
 let almacen = null;
 let EN_LINEA = true;
@@ -533,6 +558,52 @@ function soltar(cur, ids, idVenta) {
   for (const s of ids) if (cur[s] && cur[s].v === idVenta) { if (cur[s].p) cur[s] = { p: cur[s].p }; else delete cur[s]; }
 }
 
+const MAX_ADJ = 3;               // comprobantes por venta
+const IMG = {}, IMG_PEND = new Set();   // imágenes ya leídas (clave: venta/k)
+const adjDe = id => Object.entries((S.adjuntos || {})[id] || {}).sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0));
+// Reduce la foto o captura (máx. 1400 px por lado, JPEG) para que pese unos 100 a 300 KB
+async function comprimirImagen(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => mal(new Error('No se pudo leer la imagen. Prueba con otra foto o captura.')); i.src = url; });
+    let lado = 1400, calidad = 0.72, d, w, h;
+    for (let intento = 0; intento < 4; intento++) {
+      const e = Math.min(1, lado / Math.max(img.naturalWidth, img.naturalHeight));
+      w = Math.max(1, Math.round(img.naturalWidth * e)); h = Math.max(1, Math.round(img.naturalHeight * e));
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      const g = cv.getContext('2d'); g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, w, h); g.drawImage(img, 0, 0, w, h);
+      d = cv.toDataURL('image/jpeg', calidad);
+      if (d.length * 0.75 <= 300 * 1024) break;
+      lado = Math.round(lado * 0.8); calidad = Math.max(0.5, calidad - 0.07);
+    }
+    return { d, w, h, kb: Math.round(d.length * 0.75 / 1024) };
+  } finally { URL.revokeObjectURL(url); }
+}
+function dataUrlABlob(du) {
+  const [h, b64] = du.split(','), mime = (/data:(.*?);/.exec(h) || [0, 'image/jpeg'])[1], bin = atob(b64), u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new Blob([u8], { type: mime });
+}
+function cargarAdjunto(id, k) {
+  const key = id + '/' + k; if (IMG[key] || IMG_PEND.has(key)) return; IMG_PEND.add(key);
+  almacen.leer('comprobantes/' + id + '/' + k).then(x => { IMG[key] = (x && x.d) || 'error'; }).catch(() => { IMG[key] = 'error'; })
+    .finally(() => { IMG_PEND.delete(key); if (UI.modal && UI.modal.tipo === 'detalle' && UI.modal.id === id) pintarModal(); });
+}
+async function agregarAdjuntos(idVenta, imgs) {
+  const v = S.ventas[idVenta]; if (!v) throw new Error('La venta ya no existe.');
+  if (adjDe(idVenta).length + imgs.length > MAX_ADJ) throw new Error('Cada venta admite hasta ' + MAX_ADJ + ' comprobantes.');
+  const upd = {}, ahora = Date.now();
+  for (const im of imgs) { const k = almacen.nuevoId(); upd['comprobantes/' + idVenta + '/' + k] = { d: im.d, w: im.w, h: im.h }; upd['adjuntos/' + idVenta + '/' + k] = { ts: ahora, por: U.nombre, kb: im.kb }; IMG[idVenta + '/' + k] = im.d; }
+  const [hk, hv] = linea('Comprobante agregado', { venta: idVenta, codigo: v.codigo, detalle: plural(imgs.length, 'imagen', 'imágenes') + '.' });
+  upd[hk] = hv; await almacen.actualizar(upd);
+}
+async function quitarAdjunto(idVenta, k) {
+  const v = S.ventas[idVenta]; if (!v) return;
+  const [hk, hv] = linea('Comprobante quitado', { venta: idVenta, codigo: v.codigo, detalle: 'Se quitó 1 imagen.' });
+  await almacen.actualizar({ ['comprobantes/' + idVenta + '/' + k]: null, ['adjuntos/' + idVenta + '/' + k]: null, [hk]: hv });
+  delete IMG[idVenta + '/' + k];
+}
+const adjFormHtml = lista => lista.map((im, i) => `<span class="adj-item"><img src="${im.d}" alt="Comprobante"><button type="button" class="adj-x" data-a="quitarAdjForm" data-v="${i}" aria-label="Quitar imagen">×</button></span>`).join('');
 const codigoDe = n => 'V-' + String(n).padStart(4, '0');
 const sugeridoNum = () => Object.values(S.ventas).reduce((m, v) => Math.max(m, Number(v.num) || 0), 0) + 1;
 function numeroUsado(n) {
@@ -578,10 +649,13 @@ async function crearVenta(d) {
       pago: { medio: d.medio, estado: d.pagoEstado, fecha: d.pagoEstado === 'pagado' ? (d.pagoFecha === undefined ? ahora : d.pagoFecha) : null },
       entrega: { modalidad: d.modalidad, responsable: d.responsable || '', hecha: !!d.entregada, fecha: d.entregada ? ahora : null },
       vendedor: d.vendedor || U.nombre, registradoPor: { uid: U.uid, nombre: U.nombre },
-      obs: d.obs || '', creado: ahora, modificado: ahora
+      nota: d.nota || '', obs: d.obs || '', creado: ahora, modificado: ahora
     };
-    const [hk, hv] = linea('Venta registrada', { venta: id, codigo: venta.codigo, detalle: entradas(ids.length) + ', ' + sol(total) + '. ' + resumenAsientos(ids) });
-    await almacen.actualizar({ ['ventas/' + id]: venta, [hk]: hv });
+    const imgs = d.adj || [];
+    const [hk, hv] = linea('Venta registrada', { venta: id, codigo: venta.codigo, detalle: entradas(ids.length) + ', ' + sol(total) + '. ' + resumenAsientos(ids) + (imgs.length ? ' Con ' + plural(imgs.length, 'comprobante', 'comprobantes') + '.' : '') });
+    const upd = { ['ventas/' + id]: venta, [hk]: hv };
+    for (const im of imgs) { const k = almacen.nuevoId(); upd['comprobantes/' + id + '/' + k] = { d: im.d, w: im.w, h: im.h }; upd['adjuntos/' + id + '/' + k] = { ts: ahora, por: U.nombre, kb: im.kb }; IMG[id + '/' + k] = im.d; }
+    await almacen.actualizar(upd);
     return id;
   } catch (e) {
     await almacen.txAsientos(cur => { soltar(cur, ids, id); return cur; });
@@ -591,7 +665,7 @@ async function crearVenta(d) {
 }
 
 const CAMPOS = [
-  ['num', 'N.º de venta', v => v ? codigoDe(v) : ''],
+  ['num', 'N.º de venta', v => v ? codigoDe(v) : ''], ['nota', 'Nota importante'],
   ['comprador.nombre', 'Comprador'], ['comprador.doc', 'DNI'], ['comprador.tel', 'Teléfono'],
   ['total', 'Total', sol],
   ['pago.medio', 'Medio de pago'], ['pago.estado', 'Pago', v => v === 'pendiente' ? 'Pendiente' : 'Pagado'],
@@ -700,7 +774,7 @@ function montar() {
       <button type="button" data-a="tab" data-v="gestion">Gestión</button>
     </nav>
   </header>
-  <div class="ocu"><div class="ocu-in"><div class="ocu-bar" id="ocuBar"></div><ul class="ley" id="ley"></ul></div></div>
+  <div class="ocu"><div class="ocu-in"><div class="ocu-bar" id="ocuBar"></div><ul class="ley" id="ley"></ul><p class="nota" style="margin:6px 0 0">Cada marco de color rodea un grupo: línea continua = una venta, punteada = un bloqueo.</p></div></div>
   <main>
     <section id="t-mapa">
       <div class="mbarra">
@@ -737,7 +811,7 @@ function construirMapa() {
       if (!f) { h += '<div class="sep"></div>'; continue; }
       let c = '';
       for (const [col, n0, cant] of f[1]) for (let i = 0; i < cant; i++)
-        c += `<button type="button" class="b s${blq.sector}" style="grid-column:${col + i + blq.off + 1}" data-id="${blq.sector}-${f[0]}-${n0 + i}">${n0 + i}</button>`;
+        c += `<button type="button" class="b s${blq.sector}" style="grid-column:${col + i + blq.off + 1}" data-c="${col + i + blq.off + 1}" data-id="${blq.sector}-${f[0]}-${n0 + i}">${n0 + i}</button>`;
       h += `<div class="fila"><button type="button" class="fl" style="grid-column:1" data-fila="${blq.sector}|${f[0]}" aria-label="Fila ${f[0]} completa">${f[0]}</button>${c}<button type="button" class="fl" style="grid-column:27" data-fila="${blq.sector}|${f[0]}" aria-label="Fila ${f[0]} completa">${f[0]}</button></div>`;
     }
   }
@@ -778,7 +852,7 @@ function ajustarZoom() {
 function pintarAviso() {
   const av = $('#avisoMapa'), mini = $('#mapa').classList.contains('mini'), bloq = UI.modo === 'bloquear' && !UI.reubicar;
   let t = '';
-  if (UI.reubicar) { const v = S.ventas[UI.reubicar]; t = 'Cambio de butacas de la venta ' + (v ? v.codigo : '') + '. Marca las butacas que deben quedar y guarda el cambio.'; }
+  if (UI.reubicar) { const v = S.ventas[UI.reubicar]; t = 'Cambio de butacas de la venta ' + (v ? v.codigo : '') + '. Las marcadas con − se liberan y las marcadas con + son nuevas. Toca una butaca marcada para soltarla o una libre para agregarla.'; }
   else if (mini) t = bloq ? 'Modo bloqueo, vista completa. Toca una zona del plano para acercarla.' : 'Vista completa. Toca una zona del plano para acercarla y elegir butacas.';
   else if (bloq) t = 'Modo bloqueo. Toca las butacas libres que quieres bloquear, o las bloqueadas (rayadas) para desbloquearlas o venderlas. La letra de la fila elige la fila completa.';
   av.hidden = !t; av.textContent = t; av.classList.toggle('bloq', bloq);
@@ -820,17 +894,47 @@ function pintarOcupacion(st) {
   $('#ocuBar').innerHTML = seg.filter(x => x[0] !== 'libre' && x[1]).map(([c, n]) => `<i class="o-${c}" style="width:${n / TOTAL * 100}%"></i>`).join('');
   $('#ley').innerHTML = seg.map(([c, n, nom]) => `<li><span class="pt o-${c}"></span>${nom} <b>${n}</b></li>`).join('');
 }
+const PALETA_MARCOS = ['#F0782A', '#8B3FA0', '#1E9BD0', '#D61D96', '#3C5FD0', '#8DA82A'];
+function claveGrupo(id) { const r = S.asientos[id]; if (!r) return null; if (r.v) return 'v:' + r.v; if (r.p) return 'p:' + r.p; return null; }
+function colorGrupo(k) {
+  const v = k[0] === 'v' ? S.ventas[k.slice(2)] : null;
+  let n = v && Number(v.num) ? Number(v.num) : 0;
+  if (!n) for (let i = 0; i < k.length; i++) n = (n * 31 + k.charCodeAt(i)) % 9973;
+  return PALETA_MARCOS[n % PALETA_MARCOS.length];
+}
+// Un marco por cada tramo seguido de butacas de un mismo grupo (una venta o un bloqueo)
+function pintarMarcos() {
+  for (const el of $$('#mapa .grp')) el.remove();
+  if (UI.reubicar) return;
+  for (const f of $$('#mapa .fila')) {
+    let run = null;
+    const cerrarRun = () => {
+      if (!run) return;
+      const el = document.createElement('span'); el.className = 'grp' + (run.k[0] === 'p' ? ' bq' : '');
+      el.style.gridColumn = run.c0 + ' / ' + (run.c1 + 1); el.style.setProperty('--mc', colorGrupo(run.k)); f.appendChild(el); run = null;
+    };
+    for (const b of f.querySelectorAll('.b')) {
+      const k = claveGrupo(b.dataset.id), c = Number(b.dataset.c);
+      if (k && run && run.k === k && c === run.c1 + 1) run.c1 = c;
+      else { cerrarRun(); if (k) run = { k, c0: c, c1: c }; }
+    }
+    cerrarRun();
+  }
+}
 function pintarMapa() {
-  const propia = UI.reubicar;
+  const propia = UI.reubicar, orig = propia && S.ventas[propia] ? new Set(asientosDe(S.ventas[propia])) : null;
   for (const b of $$('#mapa .b')) {
     const id = b.dataset.id, a = ASIENTOS[id], e = estadoAsiento(id);
     let est = e.e;
     if (propia && e.vid === propia) est = 'libre';
-    b.className = 'b s' + a.sector + ' e-' + est + (UI.sel.has(id) ? ' sel' : '');
+    let cls = 'b s' + a.sector + ' e-' + est + (UI.sel.has(id) ? ' sel' : '');
+    if (orig) { if (orig.has(id) && !UI.sel.has(id)) cls += ' libera'; else if (!orig.has(id) && UI.sel.has(id)) cls += ' nueva'; }
+    b.className = cls;
     const quien = e.venta && e.venta.comprador ? ' (' + e.venta.comprador.nombre + ')' : '';
     b.title = SECTORES[a.sector].nombre + ', fila ' + a.fila + ', butaca ' + a.num + ': ' +
       ({ libre: 'disponible, ' + sol(a.precio), cupo: 'bloqueada (' + motivoDe(id) + ')', vendido: 'vendida' + quien, reservado: 'pago pendiente' + quien }[est]);
   }
+  pintarMarcos();
 }
 function pintarSeleccion() {
   const bar = $('#selbar'), n = UI.sel.size;
@@ -841,10 +945,12 @@ function pintarSeleccion() {
   const ids = [...UI.sel];
   let txt, acc;
   if (UI.reubicar) {
-    const v = S.ventas[UI.reubicar] || {};
-    const c = calcularPrecios(ids);
-    txt = `<b>${butacas(n)} para ${esc(v.codigo || '')}, ${sol(c.total)}</b>${n ? esc(resumenAsientos(ids)) : 'Elige al menos una butaca.'}`;
-    acc = `<button type="button" class="btn" data-a="cancelarReubicar">Cancelar</button><button type="button" class="btn pri" data-a="guardarReubicar" ${n ? '' : 'disabled'}>Guardar cambio</button>`;
+    const v = S.ventas[UI.reubicar] || {}, orig = new Set(asientosDe(v)), c = calcularPrecios(ids);
+    const quitan = [...orig].filter(x => !UI.sel.has(x)), agregan = ids.filter(x => !orig.has(x)), hayCambio = quitan.length > 0 || agregan.length > 0;
+    txt = `<b>${esc(v.codigo || '')}: quedarán ${butacas(n)}, ${sol(c.total)}</b>` + (!hayCambio
+      ? 'Sin cambios todavía. Toca una butaca marcada para soltarla o una libre para agregarla.'
+      : (quitan.length ? 'Se liberan: ' + esc(resumenAsientos(quitan)) + '. ' : '') + (agregan.length ? 'Se agregan: ' + esc(resumenAsientos(agregan)) + '.' : ''));
+    acc = `<button type="button" class="btn" data-a="cancelarReubicar">Cancelar</button>${n ? '<button type="button" class="btn" data-a="desmarcarTodas">Desmarcar todas</button>' : ''}<button type="button" class="btn pri" data-a="guardarReubicar" ${n && hayCambio ? '' : 'disabled'}>Guardar cambio</button>`;
   } else {
     const total = ids.reduce((s, id) => s + ASIENTOS[id].precio, 0);
     acc = `<button type="button" class="btn" data-a="limpiarSel">Quitar</button>`;
@@ -862,19 +968,21 @@ function pintarSeleccion() {
   bar.innerHTML = `<div class="selbar-in"><div class="txt">${txt}</div><div class="acc">${acc}</div></div>`;
 }
 
-const FILTROS = [['activas', 'Todas'], ['pago', 'Pago pendiente'], ['entrega', 'Entrega pendiente'], ['virtual', 'Venta virtual'], ['fisica', 'Venta física'], ['anuladas', 'Anuladas']];
-function etiquetas(v) {
+const FILTROS = [['activas', 'Todas'], ['pago', 'Pago pendiente'], ['entrega', 'Entrega pendiente'], ['nota', 'Con nota importante'], ['sincomp', 'Sin comprobante'], ['virtual', 'Venta virtual'], ['fisica', 'Venta física'], ['anuladas', 'Anuladas']];
+function etiquetas(v, id) {
   if (v.estado === 'anulada') return '<span class="et mal">Anulada</span>';
   let h = '';
   h += v.pago && v.pago.estado === 'pendiente' ? '<span class="et pend">Pago pendiente</span>' : '<span class="et ok">Pagada</span>';
   h += v.entrega && v.entrega.hecha ? '<span class="et ok">Entregada</span>' : '<span class="et pend">Entrega pendiente</span>';
   h += '<span class="et cupo">' + (v.canal === 'fisica' ? 'Física' : 'Virtual') + '</span>';
+  if (v.nota) h += '<span class="et imp">Nota importante</span>';
+  if (id && adjDe(id).length) h += '<span class="et ok">Comprobante</span>';
   return h;
 }
 const norm = s => String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 function textoVenta(v) {
   const c = v.comprador || {}, ids = asientosDe(v), solo = x => String(x || '').replace(/\D/g, '');
-  return norm([v.codigo, v.num, c.nombre, c.doc, c.tel, solo(c.tel), solo(c.doc), v.vendedor, (v.entrega || {}).responsable, (v.pago || {}).medio, v.obs, ids.join(' '), resumenAsientos(ids)].join(' '));
+  return norm([v.codigo, v.num, c.nombre, c.doc, c.tel, solo(c.tel), solo(c.doc), v.vendedor, (v.entrega || {}).responsable, (v.pago || {}).medio, v.obs, v.nota, ids.join(' '), resumenAsientos(ids)].join(' '));
 }
 function pintarVentas() {
   $('#filtros').innerHTML = FILTROS.map(([k, n]) => `<button type="button" data-a="filtro" data-v="${k}" aria-pressed="${UI.filtro === k}">${n}</button>`).join('');
@@ -885,6 +993,8 @@ function pintarVentas() {
     if (UI.filtro === 'anuladas' ? act : (!act && !(q && UI.filtro === 'activas'))) return false;
     if (UI.filtro === 'pago' && !(v.pago && v.pago.estado === 'pendiente')) return false;
     if (UI.filtro === 'entrega' && v.entrega && v.entrega.hecha) return false;
+    if (UI.filtro === 'nota' && !v.nota) return false;
+    if (UI.filtro === 'sincomp' && !(act && v.pago && v.pago.estado === 'pagado' && v.pago.medio !== 'Efectivo' && !adjDe(id).length)) return false;
     if ((UI.filtro === 'virtual' || UI.filtro === 'fisica') && (v.canal === 'fisica' ? 'fisica' : 'virtual') !== UI.filtro) return false;
     if (!q) return true;
     const hay = textoVenta(v);
@@ -894,10 +1004,11 @@ function pintarVentas() {
   $('#listaVentas').innerHTML = lista.length ? lista.map(([id, v]) => {
     const ids = asientosDe(v), cls = v.estado !== 'activa' ? 'anul' : (v.pago && v.pago.estado === 'pendiente') ? 'pend' : '';
     return `<button type="button" class="venta ${cls}" data-a="detalle" data-v="${esc(id)}">
-      <div class="l1"><span class="cod">${esc(v.codigo)}</span>${etiquetas(v)}</div>
+      <div class="l1"><span class="cod">${esc(v.codigo)}</span>${etiquetas(v, id)}</div>
       <div class="nom">${esc((v.comprador || {}).nombre)}</div>
       <div class="det">${entradas(ids.length)}, ${sol(v.total)}. ${esc(resumenAsientos(ids))}</div>
       <div class="det">Vendió ${esc(v.vendedor)}${v.pago ? ', ' + esc(v.pago.medio) : ''}</div>
+      ${v.nota ? `<div class="nota-imp"><b>NOTA IMPORTANTE</b>${esc(v.nota)}</div>` : ''}
     </button>`;
   }).join('') : `<p class="vacio">${q || UI.filtro !== 'activas' ? 'Ninguna venta coincide con la búsqueda o el filtro.' : 'Todavía no hay ventas. Elige butacas en el mapa para registrar la primera.'}</p>`;
 }
@@ -1022,7 +1133,7 @@ async function generarCaptura(sector, modo) {
   const ocup = modo === 'ocupacion';
   const gridY = 300 + (ocup ? 130 : 0) + 24;
   const gridH = blq.filas.reduce((h, f) => h + (f ? STEP : STEP / 2), 0);
-  const H = gridY + gridH + (sector === 'A' ? 110 : 70) + (ocup ? 70 : 130);
+  const H = gridY + gridH + (sector === 'A' ? 110 : 70) + (ocup ? 104 : 130);
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
   g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, H);
@@ -1065,10 +1176,12 @@ async function generarCaptura(sector, modo) {
     if (!f) { y += STEP / 2; continue; }
     g.font = '700 26px ' + FUENTE; g.textAlign = 'center'; g.fillStyle = '#51476B';
     g.fillText(f[0], PAD + LAB / 2, y + CEL / 2 + 9); g.fillText(f[0], W - PAD - LAB / 2, y + CEL / 2 + 9);
+    const pos = [];
     for (const [col, n0, cant] of f[1]) for (let i = 0; i < cant; i++) {
-      const x = PAD + LAB + (col + i + blq.off - cMin) * STEP;
-      dibujarButaca(g, x, y, CEL, estadoAsiento(sector + '-' + f[0] + '-' + (n0 + i)).e, n0 + i, sc, modo, FUENTE);
+      const x = PAD + LAB + (col + i + blq.off - cMin) * STEP, id = sector + '-' + f[0] + '-' + (n0 + i);
+      dibujarButaca(g, x, y, CEL, estadoAsiento(id).e, n0 + i, sc, modo, FUENTE); pos.push({ id, x });
     }
+    if (ocup) marcosCanvas(g, pos, y, CEL, STEP, 3);
     y += STEP;
   }
   // Escenario
@@ -1088,9 +1201,21 @@ async function generarCaptura(sector, modo) {
   const ahora = new Date();
   g.textAlign = 'left'; g.fillStyle = '#857F9B'; g.font = '500 23px ' + FUENTE;
   g.fillText('Actualizado ' + ahora.toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) + '  ·  Generado por ' + U.nombre, PAD, H - 26);
+  if (ocup) g.fillText('Cada marco de color rodea un grupo: línea continua = una venta, punteada = un bloqueo.', PAD, H - 62);
   const blob = await new Promise((ok, mal) => cv.toBlob(b => b ? ok(b) : mal(new Error('el navegador no pudo crear la imagen')), 'image/png'));
   const hhmm = String(ahora.getHours()).padStart(2, '0') + String(ahora.getMinutes()).padStart(2, '0');
   return { blob, url: URL.createObjectURL(blob), nombre: sc.nombre.toLowerCase().replace(/\s+/g, '-') + (ocup ? '-diagnostico-' : '-ventas-') + hhmm + '.png' };
+}
+// Marcos de grupo en imágenes: una línea de color alrededor de cada tramo seguido de butacas de una misma venta (continua) o bloqueo (punteada)
+function marcosCanvas(g, fila, y, cel, step, lw) {
+  let run = null;
+  const fin = () => {
+    if (!run) return;
+    g.save(); g.strokeStyle = colorGrupo(run.k); g.lineWidth = lw; if (run.k[0] === 'p') g.setLineDash([lw * 2.4, lw * 1.5]);
+    const m = lw + 1.5; trazoRect(g, run.x0 - m, y - m, run.x1 - run.x0 + cel + 2 * m, cel + 2 * m, 9); g.stroke(); g.restore(); run = null;
+  };
+  for (const s of fila) { const k = claveGrupo(s.id); if (k && run && run.k === k && Math.abs(s.x - run.x1 - step) < 1) run.x1 = s.x; else { fin(); if (k) run = { k, x0: s.x, x1: s.x }; } }
+  fin();
 }
 function trazoRect(g, x, y, w, h, r) {
   g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r); g.lineTo(x + w, y + h - r);
@@ -1168,11 +1293,11 @@ async function generarCapturaCliente(v) {
 }
 function hojaImagen(m) {
   let compartir = false;
-  try { compartir = !!(navigator.canShare && navigator.share && navigator.canShare({ files: [new File([m.blob], m.nombre, { type: 'image/png' })] })); } catch (e) { compartir = false; }
+  try { compartir = !!(navigator.canShare && navigator.share && navigator.canShare({ files: [new File([m.blob], m.nombre, { type: m.blob.type || 'image/png' })] })); } catch (e) { compartir = false; }
   return `<header class="hoja-cab"><h2>${esc(m.titulo)}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
     <div class="hoja-cuerpo"><div class="cap-wrap"><img class="cap-img" src="${m.url}" alt="${esc(m.titulo)}"></div>
       <p class="nota">${compartir ? 'Compártela por WhatsApp u otra app, o guárdala en el teléfono.' : 'Mantén presionada la imagen para guardarla o compartirla, o usa Descargar.'} Se guarda en tamaño completo: al abrirla puedes ampliar para ver los números.</p></div>
-    <footer class="hoja-pie"><button type="button" class="btn" data-a="cerrar">Cerrar</button><button type="button" class="btn ${compartir ? '' : 'pri'}" data-a="descargarArchivo">Descargar</button>${compartir ? '<button type="button" class="btn pri" data-a="compartirArchivo">Compartir</button>' : ''}</footer>`;
+    <footer class="hoja-pie">${m.quitar ? `<button type="button" class="btn pel" data-a="quitarAdjunto" data-v="${esc(m.quitar)}">Quitar</button>` : ''}<button type="button" class="btn" data-a="cerrar">Cerrar</button><button type="button" class="btn ${compartir ? '' : 'pri'}" data-a="descargarArchivo">Descargar</button>${compartir ? '<button type="button" class="btn pri" data-a="compartirArchivo">Compartir</button>' : ''}</footer>`;
 }
 
 /* =====================================================================
@@ -1347,8 +1472,12 @@ async function imagenTeatro(op) {
       if (!f) { y += STEP / 2; continue; }
       g.font = '700 22px ' + FUENTE; g.textAlign = 'center'; g.fillStyle = '#51476B';
       g.fillText(f[0], PAD + LAB / 2, y + CEL / 2 + 8); g.fillText(f[0], W - PAD - LAB / 2, y + CEL / 2 + 8);
-      for (const [col, n0, cant] of f[1]) for (let i = 0; i < cant; i++)
-        dibujarButaca(g, PAD + LAB + (col + i + blq.off - 1) * STEP, y, CEL, estadoAsiento(k + '-' + f[0] + '-' + (n0 + i)).e, n0 + i, sc, 'ocupacion', FUENTE, !op.numeros);
+      const pos = [];
+      for (const [col, n0, cant] of f[1]) for (let i = 0; i < cant; i++) {
+        const x = PAD + LAB + (col + i + blq.off - 1) * STEP, id = k + '-' + f[0] + '-' + (n0 + i);
+        dibujarButaca(g, x, y, CEL, estadoAsiento(id).e, n0 + i, sc, 'ocupacion', FUENTE, !op.numeros); pos.push({ id, x });
+      }
+      marcosCanvas(g, pos, y, CEL, STEP, 2.5);
       y += STEP;
     }
     y += 30;
@@ -1364,6 +1493,7 @@ async function imagenTeatro(op) {
   for (const [e, t] of [['vendido', 'Vendida'], ['reservado', 'Pago pendiente'], ['cupo', 'Bloqueada']]) {
     sw(e, SECTORES.A); g.fillStyle = '#241A3A'; g.fillText(t, lx, y + 23); lx += g.measureText(t).width + 34;
   }
+  g.fillStyle = '#51476B'; g.font = '500 22px ' + FUENTE; g.fillText('Marco de color = un grupo (venta o bloqueo)', lx + 6, y + 23);
   const blob = await new Promise((ok, mal) => cv.toBlob(b => b ? ok(b) : mal(new Error('el navegador no pudo crear la imagen')), 'image/png'));
   if (op.encabezado) { g.textAlign = 'left'; g.fillStyle = '#857F9B'; g.font = '500 23px ' + FUENTE; g.fillText('Actualizado ' + new Date().toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) + '  ·  Generado por ' + U.nombre, PAD, H - 24); }
   const blob2 = op.encabezado ? await new Promise((ok, mal) => cv.toBlob(b => b ? ok(b) : mal(new Error('el navegador no pudo crear la imagen')), 'image/png')) : blob;
@@ -1378,7 +1508,7 @@ function resumenVentas() {
   const R = { activas: [], anuladas: [], entradas: 0, total: 0, cobrado: 0, porCobrar: 0, ventasPend: 0, entOk: 0, entPend: 0,
     zona: { A: { entradas: 0, total: 0, cobrado: 0, porCobrar: 0 }, B: { entradas: 0, total: 0, cobrado: 0, porCobrar: 0 }, C: { entradas: 0, total: 0, cobrado: 0, porCobrar: 0 } },
     medio: {}, canal: { virtual: { ventas: 0, entradas: 0, total: 0 }, fisica: { ventas: 0, entradas: 0, total: 0 } }, dia: {} };
-  for (const v of Object.values(S.ventas)) (v.estado === 'activa' ? R.activas : R.anuladas).push(v);
+  for (const [vid, v] of Object.entries(S.ventas)) (v.estado === 'activa' ? R.activas : R.anuladas).push(Object.assign({ _id: vid }, v));
   const porNum = (a, b) => (Number(a.num) || 0) - (Number(b.num) || 0);
   R.activas.sort(porNum); R.anuladas.sort(porNum);
   for (const v of R.activas) {
@@ -1451,14 +1581,17 @@ function cartilla(w, v) {
     ['Responsable de entrega', en.responsable || 'Sin asignar', 'Entrega', en.hecha ? 'Realizada' + (en.fecha ? ' el ' + fechaLarga(en.fecha) : '') : 'Pendiente'],
     ['Vendedor', v.vendedor || '—', 'Registrada por', (v.registradoPor && v.registradoPor.nombre) || '—']
   ];
+  { const na = adjDe(v._id).length; filas.push(['Comprobante de pago', na ? plural(na, 'imagen adjunta', 'imágenes adjuntas') + ' en el app' : 'Sin comprobante adjunto', null, null]); }
+  if (v.nota) filas.unshift(['Nota importante', v.nota, null, null, true]);
   if (v.obs) filas.push(['Observaciones', v.obs, null, null]);
   if (anul && v.anulacion) filas.push(['Anulación', fechaLarga(v.anulacion.ts) + ', por ' + v.anulacion.por + '. Motivo: ' + v.anulacion.motivo, null, null]);
   const tx = (t, ancho, o = {}) => w.celda(w.par(w.run(t, { sz: 19, b: o.b, color: o.color }), { despues: 0, keep: o.keep, jc: o.jc }), ancho, { span: o.span, fondo: o.fondo });
   const cab = w.fila([w.celda(w.par([w.run(v.codigo, { b: 1, sz: 26, color: 'FFFFFF' }), w.run('     ' + est, { b: 1, sz: 20, color: 'FFFFFF' })], { despues: 0, keep: true }), 9638, { span: 4, fondo: fondoCab })]);
   const cuerpo = filas.map((f, i) => {
     const keep = i < filas.length - 1;
+    const imp = !!f[4];
     return w.fila(f[2] == null
-      ? [tx(f[0], an[0], { b: 1, color: w.C.gris, fondo: w.C.claro, keep }), tx(f[1], an[1] + an[2] + an[3], { span: 3, keep })]
+      ? [tx(f[0], an[0], { b: 1, color: imp ? '7D0E4E' : w.C.gris, fondo: imp ? 'F8D3E8' : w.C.claro, keep }), tx(f[1], an[1] + an[2] + an[3], { span: 3, keep, b: imp, color: imp ? '5B0B38' : null, fondo: imp ? 'FCE4F1' : null })]
       : [tx(f[0], an[0], { b: 1, color: w.C.gris, fondo: w.C.claro, keep }), tx(f[1], an[1], { keep }), tx(f[2], an[2], { b: 1, color: w.C.gris, fondo: w.C.claro, keep }), tx(f[3], an[3], { keep })]);
   });
   w.add(w.tabla(an, [cab, ...cuerpo]));
@@ -1477,6 +1610,8 @@ function docVentas() {
      { t: 'POR COBRAR', v: sol(R.porCobrar), s: plural(R.ventasPend, 'venta con pago pendiente', 'ventas con pago pendiente') },
      { t: 'ENTREGAS', v: R.entOk + ' de ' + R.activas.length, s: 'ventas con entradas entregadas' }]
   ]);
+  const conNota = R.activas.filter(v => v.nota).length;
+  if (conNota) w.texto(plural(conNota, 'venta tiene', 'ventas tienen') + ' una nota importante (aparece resaltada en su cartilla).', { color: 'C2187A', b: true, despues: 80 });
   if (!R.activas.length) w.texto('Aún no hay ventas registradas.', { color: w.C.gris });
   else {
     w.h2('Por zona');
@@ -1492,7 +1627,7 @@ function docVentas() {
     if (dias.length) { w.h2('Cobrado por día'); w.datos(['Fecha de pago', 'Ventas', 'Monto'], dias.map(k => [k, R.dia[k].ventas, sol(R.dia[k].monto)]), [4638, 2500, 2500], { der: [1, 2] }); }
     w.h1('2. Relación de ventas');
     w.datos(['N.º', 'Registro', 'Comprador', 'Zona y butacas', 'Entr.', 'Total', 'Medio', 'Pago'],
-      [...R.activas.map(v => [v.codigo, fechaCorta(v.creado), (v.comprador || {}).nombre || '', resumenAsientos(asientosDe(v)).split('; '), asientosDe(v).length, sol(v.total), (v.pago || {}).medio || '', (v.pago || {}).estado === 'pendiente' ? 'Pendiente' : 'Pagado']),
+      [...R.activas.map(v => [v.codigo, fechaCorta(v.creado), (v.comprador || {}).nombre || '', [...resumenAsientos(asientosDe(v)).split('; '), ...(v.nota ? ['Nota: ' + v.nota] : [])], asientosDe(v).length, sol(v.total), (v.pago || {}).medio || '', (v.pago || {}).estado === 'pendiente' ? 'Pendiente' : 'Pagado']),
        ['Total', '', '', '', R.entradas, sol(R.total), '', '']],
       [800, 1150, 1500, 2250, 620, 900, 1350, 1068], { der: [4, 5], total: true });
     w.add(w.par(w.run('3. Cartillas de ventas'), { estilo: 'Heading1', salto: true }));
@@ -1538,6 +1673,8 @@ function pintarModal() {
   else if (m.tipo === 'texto') h = hojaTexto(m);
   else if (m.tipo === 'imagen') h = hojaImagen(m);
   else if (m.tipo === 'archivo') h = hojaArchivo(m);
+  else if (m.tipo === 'cambio') { if (!S.ventas[m.id]) return cerrar(); h = hojaCambio(m.id); }
+  else if (m.tipo === 'nota') { if (!S.ventas[m.id]) return cerrar(); h = hojaNota(m); }
   const cuerpo = $('#modal .hoja-cuerpo'), y = cuerpo ? cuerpo.scrollTop : 0;
   $('#modal').innerHTML = `<div class="velo" data-velo><div class="hoja" role="dialog" aria-modal="true">${h}</div></div>`;
   if (m.tipo === 'detalle' && y) $('#modal .hoja-cuerpo').scrollTop = y;
@@ -1569,9 +1706,13 @@ function hojaVenta(v, m) {
           <label class="campo">Teléfono o WhatsApp<input type="tel" name="tel" autocomplete="off" value="${esc(c.tel)}"></label>
         </div>
       </fieldset>
+      <fieldset><legend>Nota importante</legend>
+        <label class="campo">Opcional. Se resalta en la lista de ventas<textarea name="nota" placeholder="Ej.: boleto sin nombre; pago pendiente en efectivo el día del evento; entregar en la puerta">${esc(v ? v.nota : '')}</textarea></label>
+      </fieldset>
       <fieldset><legend>Pago</legend>
         <div class="ops">${opcion('pagoEstado', 'pagado', 'Pagado', p.estado !== 'pendiente')}${opcion('pagoEstado', 'pendiente', 'Pendiente (separa las butacas)', p.estado === 'pendiente')}</div>
         <label class="campo">Medio de pago<select name="medio">${medios.map(x => `<option ${p.medio === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
+        ${ed ? '' : `<div class="adj-bloque"><div class="adj-lista" id="adjForm">${adjFormHtml(m.adj || [])}</div><label class="btn mini adj-btn">Adjuntar comprobante<input type="file" accept="image/*" multiple data-adj="form" hidden></label><p class="nota">Foto o captura del pago (opcional, hasta ${MAX_ADJ}).</p></div>`}
       </fieldset>
       <fieldset><legend>Entrega</legend>
         <label class="campo">Modalidad<select name="modalidad">${mods.map(x => `<option ${en.modalidad === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
@@ -1599,7 +1740,7 @@ function leerFormVenta(f) {
   const numTxt = String(e.num.value).trim(), num = Number(numTxt);
   const d = { num, numAuto: !!e.num.dataset.sug && numTxt === e.num.dataset.sug, nombre: e.nombre.value.trim(), doc: e.doc.value.trim(), tel: e.tel.value.trim(),
     pagoEstado: e.pagoEstado.value, medio: e.medio.value, modalidad: e.modalidad.value, responsable: e.responsable.value.trim(), entregada: e.entregada.checked, canal: e.canal.value,
-    vendedor: e.vendedor.value.trim(), obs: e.obs.value.trim() };
+    vendedor: e.vendedor.value.trim(), obs: e.obs.value.trim(), nota: e.nota.value.trim() };
   let msg = '';
   if (!Number.isInteger(num) || num < 1 || num > 99999) msg = 'Escribe un N.º de venta válido (número entero mayor que 0).';
   else if (!d.nombre) msg = 'Falta el nombre del comprador.';
@@ -1613,7 +1754,8 @@ function hojaDetalle(id) {
   const hist = Object.values(S.historial).filter(h => h.venta === id).sort((a, b) => a.ts - b.ts);
   return `<header class="hoja-cab"><h2>Venta ${esc(v.codigo)}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
   <div class="hoja-cuerpo">
-    <div class="l1" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${etiquetas(v)}</div>
+    <div class="l1" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${etiquetas(v, id)}</div>
+    ${v.nota ? `<div class="nota-imp grande"><b>NOTA IMPORTANTE</b>${esc(v.nota)}</div>` : ''}
     <dl>
       <dt>Comprador</dt><dd>${esc(c.nombre)}</dd>
       <dt>DNI</dt><dd>${esc(c.doc) || 'Sin registrar'}</dd>
@@ -1634,11 +1776,24 @@ function hojaDetalle(id) {
       <button type="button" class="btn pri" data-a="alternarEntrega" data-v="${esc(id)}">${en.hecha ? 'Marcar entrega como pendiente' : 'Marcar como entregada'}</button>
       ${p.estado === 'pendiente' ? `<button type="button" class="btn pri" data-a="marcarPagada" data-v="${esc(id)}">Marcar como pagada</button>` : ''}
       <button type="button" class="btn" data-a="editar" data-v="${esc(id)}">Editar datos</button>
+      <button type="button" class="btn" data-a="notaEditar" data-v="${esc(id)}">${v.nota ? 'Editar nota importante' : 'Agregar nota importante'}</button>
       <button type="button" class="btn" data-a="reubicar" data-v="${esc(id)}">Cambiar butacas</button>
       ${act ? `<button type="button" class="btn pri" data-a="imagenCliente" data-v="${esc(id)}">Imagen de butacas para el cliente</button>` : ''}
       <button type="button" class="btn" data-a="copiarResumen" data-v="${esc(id)}">Copiar resumen</button>
       <button type="button" class="btn pel" data-a="anular" data-v="${esc(id)}">Anular venta</button>
     </div>` : ''}
+    ${(() => {
+      const adjs = adjDe(id);
+      if (!adjs.length && !act) return '';
+      return `<fieldset><legend>Comprobantes de pago</legend>
+        <div class="adj-lista">${adjs.map(([k]) => {
+          const key = id + '/' + k, d = IMG[key]; if (!d) cargarAdjunto(id, k);
+          return d && d !== 'error' ? `<button type="button" class="adj-item" data-a="verAdjunto" data-v="${esc(id)}|${esc(k)}"><img src="${d}" alt="Comprobante"></button>` : `<span class="adj-item adj-carga">${d === 'error' ? 'No se pudo cargar' : 'Cargando…'}</span>`;
+        }).join('')}</div>
+        ${act && adjs.length < MAX_ADJ ? `<label class="btn mini adj-btn">Adjuntar comprobante<input type="file" accept="image/*" multiple data-adj="det" data-v="${esc(id)}" hidden></label>` : ''}
+        ${!adjs.length ? '<p class="nota">Sin comprobantes. Adjunta una foto o captura del pago.</p>' : ''}
+      </fieldset>`;
+    })()}
     <fieldset><legend>Historial de esta venta</legend>
       ${hist.length ? `<ul class="hist">${hist.map(h => lineaHist(h, false)).join('')}</ul>` : '<p class="nota">Sin movimientos registrados.</p>'}
     </fieldset>
@@ -1661,7 +1816,7 @@ function hojaConfirmar(m) {
     <div class="hoja-cuerpo"><p>${esc(m.texto)}</p></div>
     <footer class="hoja-pie"><button type="button" class="btn" data-a="cerrar">Cancelar</button><button type="button" class="btn pri" data-a="confirmarSi">${esc(m.boton)}</button></footer>`;
 }
-function confirmar(titulo, texto, boton, alAceptar) { abrir({ tipo: 'confirmar', titulo, texto, boton, alAceptar }); }
+function confirmar(titulo, texto, boton, alAceptar, despues) { abrir({ tipo: 'confirmar', titulo, texto, boton, alAceptar, despues }); }
 function hojaBloquear(m) {
   const motivos = [...new Set(['Venta física', ...Object.values(S.bloqueos).map(b => b.motivo)].filter(Boolean))];
   return `<form data-f="bloquear" novalidate>
@@ -1680,6 +1835,29 @@ function hojaTexto(m) {
   return `<header class="hoja-cab"><h2>${esc(m.titulo)}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
     <div class="hoja-cuerpo"><p class="nota">Este visor no permite copiar de forma automática. Mantén presionado el texto, elige "Seleccionar todo" y luego "Copiar".</p><textarea readonly style="min-height:220px">${esc(m.texto)}</textarea></div>
     <footer class="hoja-pie"><button type="button" class="btn pri" data-a="cerrar">Cerrar</button></footer>`;
+}
+function hojaCambio(id) {
+  const v = S.ventas[id], ids = asientosDe(v);
+  return `<header class="hoja-cab"><h2>Cambiar butacas de ${esc(v.codigo)}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
+    <div class="hoja-cuerpo">
+      <p class="res-but"><b>Butacas actuales (${ids.length})</b>${esc(resumenAsientos(ids))}</p>
+      <p>¿Qué necesitas hacer?</p>
+      <button type="button" class="opcion" data-a="cambioIniciar" data-v="${esc(id)}|todas"><b>Cambiarlas por otras butacas</b><span>Se liberan las actuales y eliges las nuevas desde cero.</span></button>
+      <button type="button" class="opcion" data-a="cambioIniciar" data-v="${esc(id)}|ajustar"><b>Agregar o quitar algunas</b><span>Las actuales quedan marcadas: toca una para soltarla o una libre para agregarla.</span></button>
+    </div>
+    <footer class="hoja-pie"><button type="button" class="btn" data-a="cerrar">Cancelar</button></footer>`;
+}
+function hojaNota(m) {
+  const v = S.ventas[m.id] || {};
+  return `<form data-f="nota" novalidate>
+    <header class="hoja-cab"><h2>Nota importante, ${esc(v.codigo)}</h2><button type="button" class="x" data-a="volverDetalle" aria-label="Cerrar">×</button></header>
+    <div class="hoja-cuerpo">
+      <p class="nota">Úsala para casos especiales: boleto sin nombre, entrega pendiente en un lugar o fecha concretos, pago por otra vía. Se resalta en la lista de ventas y en el Word.</p>
+      <label class="campo">Nota<textarea name="nota" style="min-height:110px">${esc(v.nota)}</textarea></label>
+      <p class="err" hidden></p>
+    </div>
+    <footer class="hoja-pie">${v.nota ? '<button type="button" class="btn pel" data-a="notaQuitar">Quitar nota</button>' : ''}<button type="button" class="btn" data-a="volverDetalle">Cancelar</button><button type="button" class="btn pri" data-a="enviar">Guardar</button></footer>
+  </form>`;
 }
 function hojaUsuario() {
   return `<form data-f="usuario" novalidate>
@@ -1749,7 +1927,7 @@ const A = {
   abrirVenta() {
     if (!UI.sel.size) return;
     const ids = ordenar(UI.sel), deCupo = UI.selTipo === 'cupo';
-    abrir({ tipo: 'venta', ids, deCupo, bloqueo: deCupo ? [...new Set(ids.map(motivoDe))].join(', ') : '' });
+    abrir({ tipo: 'venta', ids, deCupo, adj: [], bloqueo: deCupo ? [...new Set(ids.map(motivoDe))].join(', ') : '' });
   },
   async captura(b) {
     const [sector, modo] = b.dataset.v.split('|');
@@ -1822,29 +2000,50 @@ const A = {
     if (await copiarTexto(txt)) toast('Resumen copiado. Pégalo en WhatsApp o en un correo.', 'ok');
     else abrir({ tipo: 'texto', titulo: 'Resumen de la venta', texto: txt });
   },
-  reubicar(b) {
-    const id = b.dataset.v; UI.reubicar = id; UI.sel = new Set(asientosDe(S.ventas[id])); UI.selTipo = null; UI.tab = 'mapa'; UI.zoom = 'cerca';
-    cerrar(); pintar();
-    const el = $(`#mapa .b[data-id="${[...UI.sel][0]}"]`); if (el) el.scrollIntoView({ block: 'center', inline: 'center' });
+  reubicar(b) { abrir({ tipo: 'cambio', id: b.dataset.v }); },
+  verAdjunto(b) {
+    const [id, k] = b.dataset.v.split('|'), d = IMG[id + '/' + k], v = S.ventas[id]; if (!d || d === 'error' || !v) return;
+    const blob = dataUrlABlob(d), n = adjDe(id).findIndex(x => x[0] === k) + 1;
+    abrir({ tipo: 'imagen', titulo: 'Comprobante ' + v.codigo + (n ? ' (' + n + ')' : ''), url: URL.createObjectURL(blob), blob, nombre: 'comprobante-' + String(v.codigo).toLowerCase() + '-' + n + '.jpg', volverA: id, quitar: v.estado === 'activa' ? id + '|' + k : '' });
   },
+  quitarAdjunto(b) {
+    const [id, k] = b.dataset.v.split('|');
+    confirmar('Quitar comprobante', 'Se borra esta imagen de la venta. No se puede deshacer.', 'Quitar', () => intentar(() => quitarAdjunto(id, k), 'Comprobante quitado.'), () => abrir({ tipo: 'detalle', id }));
+  },
+  quitarAdjForm(b) { const m = UI.modal; if (!m || !m.adj) return; m.adj.splice(Number(b.dataset.v), 1); const c = $('#adjForm'); if (c) c.innerHTML = adjFormHtml(m.adj); },
+  notaEditar(b) { abrir({ tipo: 'nota', id: b.dataset.v }); },
+  notaQuitar() { const f = $('#modal form'); if (f) { f.elements.nota.value = ''; F.nota(f); } },
+  cambioIniciar(b) {
+    const [id, modo] = b.dataset.v.split('|'), v = S.ventas[id]; if (!v) return;
+    UI.reubicar = id; UI.sel = modo === 'ajustar' ? new Set(asientosDe(v)) : new Set(); UI.selTipo = null; UI.tab = 'mapa'; UI.zoom = 'cerca';
+    cerrar(); pintar();
+    const el = $(`#mapa .b[data-id="${asientosDe(v)[0]}"]`); if (el) el.scrollIntoView({ block: 'center', inline: 'center' });
+  },
+  desmarcarTodas() { UI.sel.clear(); pintarMapa(); pintarSeleccion(); },
   cancelarReubicar() { UI.reubicar = null; limpiarSel(); pintar(); },
   async guardarReubicar(b) {
-    const id = UI.reubicar, ids = [...UI.sel];
-    if (await intentar(() => cambiarAsientos(id, ids), 'Butacas cambiadas.', b)) { UI.reubicar = null; limpiarSel(); pintar(); abrir({ tipo: 'detalle', id }); }
+    const id = UI.reubicar, ids = [...UI.sel], v = S.ventas[id]; if (!v) return;
+    const orig = asientosDe(v), total = calcularPrecios(ids).total;
+    const aplicar = async () => { if (await intentar(() => cambiarAsientos(id, ids), 'Butacas cambiadas.', b)) { UI.reubicar = null; limpiarSel(); } };
+    if (ids.length !== orig.length || total !== Number(v.total)) {
+      confirmar('Cambia el número de entradas', 'La venta pasa de ' + entradas(orig.length) + ' (' + sol(v.total) + ') a ' + entradas(ids.length) + ' (' + sol(total) + '). ¿Guardar el cambio?', 'Guardar cambio', aplicar, () => { if (!UI.reubicar) abrir({ tipo: 'detalle', id }); });
+      return;
+    }
+    await aplicar(); pintar(); abrir({ tipo: 'detalle', id });
   },
-  async confirmarSi(b) { const m = UI.modal; b.disabled = true; await m.alAceptar(); cerrar(); pintar(); },
+  async confirmarSi(b) { const m = UI.modal; b.disabled = true; await m.alAceptar(); cerrar(); pintar(); if (m.despues) m.despues(); },
   exportarButacas() {
-    const cab = ['ID Asiento', 'Zona', 'Fila', 'Número de Asiento', 'Precio', 'Estado', 'Comprador', 'DNI', 'Teléfono', 'Fecha de Pago', 'Observaciones',
-      'Código de venta', 'Precio cobrado', 'Medio de pago', 'Pago', 'Modalidad de entrega', 'Responsable de entrega', 'Entregada', 'Vendedor', 'Canal', 'Bloqueo', 'Fecha de registro'];
+    const cab = ['ID Asiento', 'Zona', 'Fila', 'Número de Asiento', 'Precio', 'Estado', 'Comprador', 'DNI', 'Teléfono', 'Fecha de Pago', 'Observaciones', 'Nota importante',
+      'Código de venta', 'Precio cobrado', 'Medio de pago', 'Pago', 'Modalidad de entrega', 'Responsable de entrega', 'Entregada', 'Vendedor', 'Canal', 'Bloqueo', 'Fecha de registro', 'Comprobantes'];
     const nomE = { libre: 'Disponible', cupo: 'Bloqueado', vendido: 'Vendido', reservado: 'Pago pendiente' };
     const fx = ts => ts ? new Date(ts).toLocaleString('es-PE') : '';
     const filas = [...LISTA].sort((a, b) => a.sector.localeCompare(b.sector) || FILAS[a.sector].indexOf(b.fila) - FILAS[a.sector].indexOf(a.fila) || a.num - b.num).map(a => {
       const e = estadoAsiento(a.id), v = e.venta, r = S.asientos[a.id] || {};
       const base = [SECTORES[a.sector].nombre + '-' + a.fila + '-' + a.num, SECTORES[a.sector].nombre, a.fila, a.num, a.precio, nomE[e.e]];
-      if (!v) return [...base, '', '', '', '', '', '', '', '', '', '', '', '', '', '', r.p ? motivoDe(a.id) : '', ''];
+      if (!v) return [...base, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', r.p ? motivoDe(a.id) : '', '', ''];
       const c = v.comprador || {}, p = v.pago || {}, en = v.entrega || {};
-      return [...base, c.nombre, c.doc, c.tel, fx(p.fecha), v.obs, v.codigo, precioDe(v, a.id), p.medio, p.estado === 'pendiente' ? 'Pendiente' : 'Pagado',
-        en.modalidad, en.responsable, en.hecha ? 'Sí' : 'No', v.vendedor, v.canal === 'fisica' ? 'Venta física' : 'Venta virtual', r.p ? motivoDe(a.id) : '', fx(v.creado)];
+      return [...base, c.nombre, c.doc, c.tel, fx(p.fecha), v.obs, v.nota || '', v.codigo, precioDe(v, a.id), p.medio, p.estado === 'pendiente' ? 'Pendiente' : 'Pagado',
+        en.modalidad, en.responsable, en.hecha ? 'Sí' : 'No', v.vendedor, v.canal === 'fisica' ? 'Venta física' : 'Venta virtual', r.p ? motivoDe(a.id) : '', fx(v.creado), adjDe(e.vid).length];
     });
     descargar('control-entradas-saqra.csv', csv([cab, ...filas]));
   },
@@ -1857,6 +2056,13 @@ const A = {
   salir() { confirmar('Salir de este dispositivo', 'Se olvidan tu nombre y el código del grupo en este teléfono. Para volver a entrar necesitarás el enlace privado del grupo.', 'Salir', () => { AJ.del('nombre'); AJ.del('codigo'); location.reload(); }); }
 };
 const F = {
+  async nota(f) {
+    const id = UI.modal.id, v = S.ventas[id], n = copia(v), txt = f.elements.nota.value.trim(); n.nota = txt;
+    const r = await intentar(() => guardarVenta(id, n, txt ? 'Nota importante actualizada' : 'Nota importante quitada'), '', $('.btn.pri', f));
+    if (r === false) return;
+    toast(r === 'ok' ? 'Nota guardada.' : 'No había cambios que guardar.', r === 'ok' ? 'ok' : '');
+    abrir({ tipo: 'detalle', id });
+  },
   async bloquear(f) {
     const motivo = f.elements.motivo.value.trim(), err = $('.err', f);
     err.hidden = !!motivo; err.textContent = 'Escribe el motivo o destino del bloqueo.'; if (!motivo) return;
@@ -1867,7 +2073,7 @@ const F = {
   },
   async venta(f) {
     const d = leerFormVenta(f); if (!d) return;
-    const m = UI.modal; d.asientos = m.ids; d.deCupo = m.deCupo; d.bloqueo = m.bloqueo;
+    const m = UI.modal; d.asientos = m.ids; d.deCupo = m.deCupo; d.bloqueo = m.bloqueo; d.adj = m.adj || [];
     const id = await intentar(() => crearVenta(d), 'Venta registrada.', $('.btn.pri', f));
     if (id) { limpiarSel(); cerrar(); pintar(); abrir({ tipo: 'detalle', id }); }
     else depurarSeleccion();
@@ -1879,7 +2085,7 @@ const F = {
     n.pago = Object.assign({}, v.pago, { medio: d.medio, estado: d.pagoEstado });
     n.entrega = Object.assign({}, v.entrega, { modalidad: d.modalidad, responsable: d.responsable, hecha: d.entregada });
     n.canal = d.canal;
-    n.vendedor = d.vendedor; n.obs = d.obs; n.num = d.num;
+    n.vendedor = d.vendedor; n.obs = d.obs; n.num = d.num; n.nota = d.nota;
     const r = await intentar(() => guardarVenta(id, n), '', $('.btn.pri', f));
     if (r === false) return;
     toast(r === 'ok' ? 'Cambios guardados.' : 'No había cambios que guardar.', r === 'ok' ? 'ok' : '');
@@ -1922,6 +2128,26 @@ document.addEventListener('click', e => {
 });
 // Nada depende del envío nativo de formularios: algunos visores (por ejemplo dentro de apps) lo bloquean.
 document.addEventListener('submit', e => e.preventDefault());
+// Selección de fotos o capturas del comprobante (formulario de venta o detalle de la venta)
+document.addEventListener('change', async e => {
+  const t = e.target; if (!t.dataset || !t.dataset.adj) return;
+  const files = [...(t.files || [])]; t.value = ''; if (!files.length) return;
+  try {
+    toast('Preparando imagen…');
+    if (t.dataset.adj === 'form') {
+      const m = UI.modal; if (!m || m.tipo !== 'venta') return;
+      m.adj = m.adj || []; const lugar = Math.max(0, MAX_ADJ - m.adj.length);
+      if (files.length > lugar) toast('Cada venta admite hasta ' + MAX_ADJ + ' comprobantes.', 'error');
+      for (const f of files.slice(0, lugar)) m.adj.push(await comprimirImagen(f));
+      const c = $('#adjForm'); if (c) c.innerHTML = adjFormHtml(m.adj);
+    } else {
+      const id = t.dataset.v, lugar = Math.max(0, MAX_ADJ - adjDe(id).length), imgs = [];
+      if (files.length > lugar) toast('Cada venta admite hasta ' + MAX_ADJ + ' comprobantes.', 'error');
+      for (const f of files.slice(0, lugar)) imgs.push(await comprimirImagen(f));
+      if (imgs.length) await intentar(() => agregarAdjuntos(id, imgs), imgs.length === 1 ? 'Comprobante agregado.' : 'Comprobantes agregados.');
+    }
+  } catch (err) { toast(err.message || String(err), 'error'); }
+});
 document.addEventListener('input', e => {
   const t = e.target;
   if (t.form && (t.form.dataset.f === 'venta' || t.form.dataset.f === 'editar')) actualizarFormVenta(t.form);
