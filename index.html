@@ -627,6 +627,28 @@ async function moverNumero(idVenta, viejo, nuevo) {
   });
   if (!ok) throw new Error(numeroUsado(nuevo));
 }
+// Quién tiene hoy un N.º de venta (las ventas con el número liberado ya no cuentan)
+function duenoNumero(n, exceptoId) { return Object.entries(S.ventas).find(([hid, x]) => hid !== exceptoId && Number(x.num) === n) || null; }
+// Deja libre el N.º de una venta anulada, para que otra venta pueda usarlo
+async function liberarNumero(id) {
+  const v = S.ventas[id]; if (!v || v.estado === 'activa' || !Number(v.num)) return;
+  const n = Number(v.num), nueva = copia(v);
+  nueva.numOriginal = n; nueva.num = 0; nueva.codigo = codigoDe(n) + ' (N.º liberado)'; nueva.modificado = Date.now();
+  const ok = await almacen.txNumeros(cur => { if (cur['n' + n] && cur['n' + n] !== id) return cur; delete cur['n' + n]; return cur; });
+  if (!ok) throw new Error('No se pudo liberar el número. Intenta de nuevo.');
+  const [hk, hv] = linea('N.º de venta liberado', { venta: id, codigo: nueva.codigo, detalle: 'El N.º ' + codigoDe(n) + ' queda disponible para otra venta.' });
+  await almacen.actualizar({ ['ventas/' + id]: nueva, [hk]: hv });
+}
+// Dos ventas vigentes se intercambian el número; se guarda junto con los demás cambios del formulario
+async function intercambiarYGuardar(id, nueva, hid) {
+  const antes = S.ventas[id], otro = copia(S.ventas[hid]), viejo = Number(antes.num), nuevo = Number(nueva.num);
+  const ok = await almacen.txNumeros(cur => { if (cur['n' + nuevo] && cur['n' + nuevo] !== hid) return; cur['n' + nuevo] = id; cur['n' + viejo] = hid; return cur; });
+  if (!ok) throw new Error('El número cambió mientras tanto. Vuelve a intentarlo.');
+  otro.num = viejo; otro.codigo = codigoDe(viejo); otro.modificado = Date.now();
+  const [hk2, hv2] = linea('N.º de venta intercambiado', { venta: hid, codigo: otro.codigo, detalle: 'Intercambió su número con ' + antes.codigo + ' (que ahora es ' + codigoDe(nuevo) + ').', cambios: [{ campo: 'N.º de venta', antes: codigoDe(nuevo), despues: codigoDe(viejo) }] });
+  return guardarVenta(id, nueva, 'Venta modificada', { sinMover: true, upd: { ['ventas/' + hid]: otro, [hk2]: hv2 } });
+}
+const codigoSlug = v => String(v.codigo).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 async function crearVenta(d) {
   const id = almacen.nuevoId(), ids = ordenar(d.asientos), deCupo = !!d.deCupo;
   const ok = await almacen.txAsientos(cur => {
@@ -672,7 +694,7 @@ const CAMPOS = [
   ['canal', 'Canal', v => CANALES[v] || v],
   ['vendedor', 'Vendedor'], ['obs', 'Observaciones']
 ];
-async function guardarVenta(id, nueva, accion) {
+async function guardarVenta(id, nueva, accion, opc) {
   const antes = S.ventas[id], cambios = [];
   for (const [ruta, nombre, fmt] of CAMPOS) {
     const a = leer(antes, ruta), d = leer(nueva, ruta);
@@ -680,7 +702,7 @@ async function guardarVenta(id, nueva, accion) {
       cambios.push({ campo: nombre, antes: fmt ? fmt(a) : String(a == null ? '' : a), despues: fmt ? fmt(d) : String(d == null ? '' : d) });
   }
   if (!cambios.length) return 'igual';
-  if (nueva.num !== antes.num) { await moverNumero(id, antes.num, nueva.num); nueva.codigo = codigoDe(nueva.num); }
+  if (nueva.num !== antes.num) { if (!(opc && opc.sinMover)) await moverNumero(id, antes.num, nueva.num); nueva.codigo = codigoDe(nueva.num); }
   const ahora = Date.now();
   if (nueva.pago.estado === 'pagado' && antes.pago && antes.pago.estado === 'pendiente') nueva.pago.fecha = ahora;
   if (nueva.pago.estado === 'pendiente') nueva.pago.fecha = null;
@@ -688,16 +710,22 @@ async function guardarVenta(id, nueva, accion) {
   if (!nueva.entrega.hecha) nueva.entrega.fecha = null;
   nueva.modificado = ahora;
   const [hk, hv] = linea(accion || 'Venta modificada', { venta: id, codigo: nueva.codigo, cambios });
-  await almacen.actualizar({ ['ventas/' + id]: nueva, [hk]: hv });
+  await almacen.actualizar(Object.assign({ ['ventas/' + id]: nueva, [hk]: hv }, (opc && opc.upd) || {}));
   return 'ok';
 }
-async function anularVenta(id, motivo) {
+async function anularVenta(id, motivo, liberar) {
   const v = S.ventas[id], ids = asientosDe(v);
   const deBloq = ids.filter(x => S.asientos[x] && S.asientos[x].p).length;
   await almacen.txAsientos(cur => { soltar(cur, ids, id); return cur; });
   const nueva = copia(v); nueva.estado = 'anulada'; nueva.modificado = Date.now();
   nueva.anulacion = { ts: Date.now(), por: U.nombre, motivo };
-  const [hk, hv] = linea('Venta anulada', { venta: id, codigo: v.codigo, detalle: 'Motivo: ' + motivo + '. ' + butacas(ids.length) + (ids.length === 1 ? ' liberada' : ' liberadas') + (deBloq ? ' (' + deBloq + (deBloq === 1 ? ' vuelve a quedar bloqueada)' : ' vuelven a quedar bloqueadas)') : '') + '.' });
+  let extra = '';
+  if (liberar && Number(v.num)) {
+    const n = Number(v.num);
+    const okN = await almacen.txNumeros(cur => { if (cur['n' + n] && cur['n' + n] !== id) return cur; delete cur['n' + n]; return cur; });
+    if (okN) { nueva.numOriginal = n; nueva.num = 0; nueva.codigo = codigoDe(n) + ' (N.º liberado)'; extra = ' El N.º ' + codigoDe(n) + ' queda disponible para otra venta.'; }
+  }
+  const [hk, hv] = linea('Venta anulada', { venta: id, codigo: v.codigo, detalle: 'Motivo: ' + motivo + '. ' + butacas(ids.length) + (ids.length === 1 ? ' liberada' : ' liberadas') + (deBloq ? ' (' + deBloq + (deBloq === 1 ? ' vuelve a quedar bloqueada)' : ' vuelven a quedar bloqueadas)') : '') + '.' + extra });
   await almacen.actualizar({ ['ventas/' + id]: nueva, [hk]: hv });
 }
 async function cambiarAsientos(id, nuevos) {
@@ -1288,7 +1316,7 @@ async function generarCapturaCliente(v) {
   g.textAlign = 'left'; g.fillStyle = '#857F9B'; g.font = '500 22px ' + FUENTE; g.fillText('Venta ' + v.codigo + '  ·  Generado el ' + fechaLarga(Date.now()), PAD, H - 26);
   const blob = await new Promise((ok, mal) => cv.toBlob(b => b ? ok(b) : mal(new Error('el navegador no pudo crear la imagen')), 'image/png'));
   const slug = norm((v.comprador || {}).nombre).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
-  return { blob, url: URL.createObjectURL(blob), nombre: 'butacas-' + String(v.codigo).toLowerCase() + (slug ? '-' + slug : '') + '.png' };
+  return { blob, url: URL.createObjectURL(blob), nombre: 'butacas-' + codigoSlug(v) + (slug ? '-' + slug : '') + '.png' };
 }
 function hojaImagen(m) {
   let compartir = false;
@@ -1771,6 +1799,7 @@ function hojaDetalle(id) {
       ${v.obs ? `<dt>Observaciones</dt><dd>${esc(v.obs)}</dd>` : ''}
       ${v.anulacion ? `<dt>Anulación</dt><dd>${fch(v.anulacion.ts)} por ${esc(v.anulacion.por)}. ${esc(v.anulacion.motivo)}</dd>` : ''}
     </dl>
+    ${!act && Number(v.num) ? `<div class="accs"><button type="button" class="btn" data-a="liberarNum" data-v="${esc(id)}">Liberar su N.º ${esc(v.codigo)} para otra venta</button></div><p class="nota">Deja ese número disponible. La venta anulada sigue en el registro, sin número.</p>` : ''}
     ${act ? `<div class="accs">
       <button type="button" class="btn pri" data-a="alternarEntrega" data-v="${esc(id)}">${en.hecha ? 'Marcar entrega como pendiente' : 'Marcar como entregada'}</button>
       ${p.estado === 'pendiente' ? `<button type="button" class="btn pri" data-a="marcarPagada" data-v="${esc(id)}">Marcar como pagada</button>` : ''}
@@ -1805,6 +1834,8 @@ function hojaAnular(id) {
     <div class="hoja-cuerpo">
       <p>Se liberan ${butacas(asientosDe(v).length)} de ${esc((v.comprador || {}).nombre)}. La venta queda en la lista de anuladas con su historial.</p>
       <label class="campo">Motivo de la anulación<textarea name="motivo" required></textarea></label>
+      <label class="chk"><input type="checkbox" name="liberar"><span>Liberar su N.º ${esc(v.codigo)} para usarlo en otra venta</span></label>
+      <p class="nota">Si no lo liberas, el número queda reservado a esta venta anulada. Puedes liberarlo después desde su detalle.</p>
       <p class="err" hidden></p>
     </div>
     <footer class="hoja-pie"><button type="button" class="btn" data-a="volverDetalle">No anular</button><button type="button" class="btn pel" data-a="enviar">Anular venta</button></footer>
@@ -1815,7 +1846,7 @@ function hojaConfirmar(m) {
     <div class="hoja-cuerpo"><p>${esc(m.texto)}</p></div>
     <footer class="hoja-pie"><button type="button" class="btn" data-a="cerrar">Cancelar</button><button type="button" class="btn pri" data-a="confirmarSi">${esc(m.boton)}</button></footer>`;
 }
-function confirmar(titulo, texto, boton, alAceptar, despues) { abrir({ tipo: 'confirmar', titulo, texto, boton, alAceptar, despues }); }
+function confirmar(titulo, texto, boton, alAceptar, despues, volverA) { abrir({ tipo: 'confirmar', titulo, texto, boton, alAceptar, despues, volverA }); }
 function hojaBloquear(m) {
   const motivos = [...new Set(['Venta física', ...Object.values(S.bloqueos).map(b => b.motivo)].filter(Boolean))];
   return `<form data-f="bloquear" novalidate>
@@ -2003,13 +2034,18 @@ const A = {
   verAdjunto(b) {
     const [id, k] = b.dataset.v.split('|'), d = IMG[id + '/' + k], v = S.ventas[id]; if (!d || d === 'error' || !v) return;
     const blob = dataUrlABlob(d), n = adjDe(id).findIndex(x => x[0] === k) + 1;
-    abrir({ tipo: 'imagen', titulo: 'Comprobante ' + v.codigo + (n ? ' (' + n + ')' : ''), url: URL.createObjectURL(blob), blob, nombre: 'comprobante-' + String(v.codigo).toLowerCase() + '-' + n + '.jpg', volverA: id, quitar: v.estado === 'activa' ? id + '|' + k : '' });
+    abrir({ tipo: 'imagen', titulo: 'Comprobante ' + v.codigo + (n ? ' (' + n + ')' : ''), url: URL.createObjectURL(blob), blob, nombre: 'comprobante-' + codigoSlug(v) + '-' + n + '.jpg', volverA: id, quitar: v.estado === 'activa' ? id + '|' + k : '' });
   },
   quitarAdjunto(b) {
     const [id, k] = b.dataset.v.split('|');
-    confirmar('Quitar comprobante', 'Se borra esta imagen de la venta. No se puede deshacer.', 'Quitar', () => intentar(() => quitarAdjunto(id, k), 'Comprobante quitado.'), () => abrir({ tipo: 'detalle', id }));
+    confirmar('Quitar comprobante', 'Se borra esta imagen de la venta. No se puede deshacer.', 'Quitar', () => intentar(() => quitarAdjunto(id, k), 'Comprobante quitado.'), () => abrir({ tipo: 'detalle', id }), id);
   },
   quitarAdjForm(b) { const m = UI.modal; if (!m || !m.adj) return; m.adj.splice(Number(b.dataset.v), 1); const c = $('#adjForm'); if (c) c.innerHTML = adjFormHtml(m.adj); },
+  numOk(b) { const m = UI.modal, f = $('#modal form'); if (!m || !f || !F[f.dataset.f]) return; m.acepta = b.dataset.v; F[f.dataset.f](f); },
+  liberarNum(b) {
+    const id = b.dataset.v, v = S.ventas[id]; if (!v) return;
+    confirmar('Liberar el N.º ' + v.codigo, 'El número ' + v.codigo + ' queda disponible para otra venta. Esta venta anulada seguirá en el registro, sin número.', 'Liberar', () => intentar(() => liberarNumero(id), 'N.º liberado.'), () => abrir({ tipo: 'detalle', id }), id);
+  },
   notaEditar(b) { abrir({ tipo: 'nota', id: b.dataset.v }); },
   notaQuitar() { const f = $('#modal form'); if (f) { f.elements.nota.value = ''; F.nota(f); } },
   cambioIniciar(b) {
@@ -2054,6 +2090,15 @@ const A = {
   cambiarUsuario() { abrir({ tipo: 'usuario' }); },
   salir() { confirmar('Salir de este dispositivo', 'Se olvidan tu nombre y el código del grupo en este teléfono. Para volver a entrar necesitarás el enlace privado del grupo.', 'Salir', () => { AJ.del('nombre'); AJ.del('codigo'); location.reload(); }); }
 };
+function ofrecerNumero(f, hv, tipo, num) {
+  const err = $('.err', f), nom = esc((hv.comprador || {}).nombre || '');
+  err.hidden = false;
+  err.innerHTML = (tipo === 'reusar'
+    ? 'El N.º ' + num + ' lo tiene la venta anulada ' + esc(hv.codigo) + ' (' + nom + '). Si lo reutilizas, esa venta anulada queda sin número.'
+    : 'El N.º ' + num + ' lo usa ' + esc(hv.codigo) + ' (' + nom + '). Si intercambias, cada venta toma el número de la otra.')
+    + ' <button type="button" class="btn mini" data-a="numOk" data-v="' + tipo + '|' + num + '">' + (tipo === 'reusar' ? 'Sí, reutilizarlo' : 'Sí, intercambiar') + '</button>';
+  err.scrollIntoView({ block: 'center' });
+}
 const F = {
   async nota(f) {
     const id = UI.modal.id, v = S.ventas[id], n = copia(v), txt = f.elements.nota.value.trim(); n.nota = txt;
@@ -2073,7 +2118,17 @@ const F = {
   async venta(f) {
     const d = leerFormVenta(f); if (!d) return;
     const m = UI.modal; d.asientos = m.ids; d.deCupo = m.deCupo; d.bloqueo = m.bloqueo; d.adj = m.adj || [];
-    const id = await intentar(() => crearVenta(d), 'Venta registrada.', $('.btn.pri', f));
+    let previo = null;
+    if (!d.numAuto) {
+      const dueno = duenoNumero(d.num);
+      if (dueno) {
+        const [hid, hv] = dueno;
+        if (hv.estado === 'activa') { const err = $('.err', f); err.hidden = false; err.textContent = numeroUsado(d.num); err.scrollIntoView({ block: 'center' }); return; }
+        if (m.acepta !== 'reusar|' + d.num) { ofrecerNumero(f, hv, 'reusar', d.num); return; }
+        previo = () => liberarNumero(hid);
+      }
+    }
+    const id = await intentar(async () => { if (previo) await previo(); return crearVenta(d); }, 'Venta registrada.', $('.btn.pri', f));
     if (id) { limpiarSel(); cerrar(); pintar(); abrir({ tipo: 'detalle', id }); }
     else depurarSeleccion();
   },
@@ -2085,7 +2140,16 @@ const F = {
     n.entrega = Object.assign({}, v.entrega, { modalidad: d.modalidad, responsable: d.responsable, hecha: d.entregada });
     n.canal = d.canal;
     n.vendedor = d.vendedor; n.obs = d.obs; n.num = d.num; n.nota = d.nota;
-    const r = await intentar(() => guardarVenta(id, n), '', $('.btn.pri', f));
+    let accion = () => guardarVenta(id, n);
+    if (d.num !== Number(v.num)) {
+      const dueno = duenoNumero(d.num, id);
+      if (dueno) {
+        const [hid, hv] = dueno, anul = hv.estado !== 'activa', tipo = anul ? 'reusar' : 'intercambiar';
+        if (UI.modal.acepta !== tipo + '|' + d.num) { ofrecerNumero(f, hv, tipo, d.num); return; }
+        accion = anul ? async () => { await liberarNumero(hid); return guardarVenta(id, n); } : () => intercambiarYGuardar(id, n, hid);
+      }
+    }
+    const r = await intentar(accion, '', $('.btn.pri', f));
     if (r === false) return;
     toast(r === 'ok' ? 'Cambios guardados.' : 'No había cambios que guardar.', r === 'ok' ? 'ok' : '');
     abrir({ tipo: 'detalle', id });
@@ -2094,7 +2158,7 @@ const F = {
     const motivo = f.elements.motivo.value.trim(), err = $('.err', f);
     err.hidden = !!motivo; err.textContent = 'Escribe el motivo de la anulación.'; if (!motivo) return;
     const id = UI.modal.id;
-    if (await intentar(() => anularVenta(id, motivo), 'Venta anulada.', $('.btn.pel', f))) { abrir({ tipo: 'detalle', id }); pintar(); }
+    if (await intentar(() => anularVenta(id, motivo, f.elements.liberar.checked), 'Venta anulada.', $('.btn.pel', f))) { abrir({ tipo: 'detalle', id }); pintar(); }
   },
   usuario(f) {
     const n = f.elements.nombre.value.trim(); if (!n) return;
