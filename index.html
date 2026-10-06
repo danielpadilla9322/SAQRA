@@ -37,7 +37,6 @@ h1,h2,h3{font-family:var(--fc);margin:0;line-height:1.15}
 .cab p{margin:3px 0 0;font-size:14px;color:#CFC8E4}
 .cab-der{display:flex;flex-wrap:wrap;gap:6px;align-items:center;max-width:100%}
 .chip{border:1px solid #6B6189;background:transparent;color:#fff;border-radius:999px;padding:3px 10px;font-size:13px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
-.chip.demo{background:var(--maiz);border-color:var(--maiz);color:var(--tinta);font-weight:600}
 .chip.ok{border-color:#58D39A;color:#9EF0C6}
 .chip.off{border-color:#FF9C8A;color:#FFB9AC}
 
@@ -90,6 +89,11 @@ body.con-sel main{padding-bottom:calc(var(--nav) + 150px)}
 .sec-cap{display:flex;flex-wrap:wrap;gap:8px;margin:-2px 0 10px;padding:0 calc(var(--lab) + var(--g));position:sticky;left:0;max-width:92vw}
 .mapa.mini .sec-cap{margin-bottom:6px}
 .sec-cap .btn{font-size:13.5px;padding:4px 10px;min-height:32px}
+.doc-op{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--linea)}
+.doc-op > div{flex:1 1 240px}
+.doc-op b{font:700 18px var(--fc);display:block}
+.otros{border-top:1px solid var(--linea);padding-top:10px}
+.otros summary{cursor:pointer;color:var(--tinta2);font-size:14.5px}
 .cap-wrap{border:1px solid var(--linea);border-radius:8px;overflow:hidden;background:#fff}
 .cap-img{display:block;width:100%;height:auto}
 .sec-tit b{font-size:19px;color:#fff;padding:1px 9px;border-radius:5px}
@@ -128,7 +132,7 @@ body.con-sel main{padding-bottom:calc(var(--nav) + 150px)}
 .selbar .acc{display:flex;flex-wrap:wrap;gap:8px}
 
 /* Listas y tarjetas */
-.busca{display:flex;gap:8px;flex-wrap:wrap}
+.busca{display:flex;gap:8px;flex-wrap:wrap;position:sticky;top:env(safe-area-inset-top,0px);z-index:15;background:var(--fondo);padding:8px 0}
 .busca input{flex:1 1 220px}
 input[type=text],input[type=search],input[type=number],input[type=email],input[type=password],input[type=tel],select,textarea{width:100%;border:1.5px solid #B9B3CE;border-radius:8px;padding:10px 11px;background:#fff;min-height:44px}
 textarea{min-height:70px;resize:vertical}
@@ -258,17 +262,18 @@ dt{color:var(--tinta2)} dd{margin:0;font-weight:500;overflow-wrap:anywhere}
 /* =====================================================================
    1. CONFIGURACIÓN
    ---------------------------------------------------------------------
-   Mientras FIREBASE_CONFIG sea null, el app corre en MODO DEMO: todo
-   funciona, pero los datos viven solo en la memoria de esta pestaña.
-   Para conectar Firebase (Realtime Database + Authentication con correo
-   y contraseña), pega aquí la configuración del proyecto:
-
-   const FIREBASE_CONFIG = {
-     apiKey: "...", authDomain: "...", databaseURL: "...",
-     projectId: "...", appId: "..."
-   };
+   Pega aquí los valores de tu proyecto de Firebase (Configuración del
+   proyecto > Tus apps > Configuración del SDK). Reemplaza cada PEGA_AQUI.
+   El código secreto del grupo NO va en este archivo: viaja en el enlace
+   privado que se comparte en el grupo (termina en #k=CÓDIGO).
    ===================================================================== */
-const FIREBASE_CONFIG = null;
+const FIREBASE_CONFIG = {
+  apiKey: "PEGA_AQUI",
+  authDomain: "PEGA_AQUI",
+  databaseURL: "PEGA_AQUI",
+  projectId: "PEGA_AQUI",
+  appId: "PEGA_AQUI"
+};
 const FIREBASE_SDK = '10.12.2';
 
 const EVENTO = {
@@ -408,53 +413,33 @@ async function copiarTexto(txt) {
 
 /* =====================================================================
    4. ALMACENES DE DATOS
-   Ambos exponen lo mismo: txAsientos, siguienteNum, actualizar, nuevoId.
+   Ambos exponen lo mismo: txAsientos, txNumeros, actualizar, nuevoId.
    Estructura:
      asientos/{id}   -> {v: idVenta} | {p: idBloqueo} | {v: idVenta, p: idBloqueo}
                         (p = butaca bloqueada; sin registro = disponible)
      bloqueos/{id}   -> {motivo, por, uid, ts}: cada tanda de butacas bloqueadas
      ventas/{id}     -> la venta completa
      historial/{id}  -> registro de cada acción
-     usuarios/{uid}  -> {nombre, correo, activo}
-     contador        -> correlativo de ventas
+     usuarios/{dispositivo} -> {nombre, ult}
+   Todo cuelga de /g_{CÓDIGO DEL GRUPO}/ (ver reglas de Firebase).
+     numeros/n{N}    -> idVenta: reserva de cada N.º de venta (evita repetidos; no se reutiliza)
    ===================================================================== */
-function almacenLocal(alCambiar) {
-  let db;
-  const emitir = () => alCambiar(copia({ asientos: db.asientos, ventas: db.ventas, historial: db.historial, usuarios: db.usuarios, bloqueos: db.bloqueos }));
-  const api = {
-    modo: 'demo',
-    async txAsientos(fn) { const r = fn(copia(db.asientos)); if (r === undefined) return false; db.asientos = r; emitir(); return true; },
-    async siguienteNum() { return ++db.contador; },
-    async actualizar(obj) {
-      for (const [ruta, val] of Object.entries(obj)) {
-        const p = ruta.split('/'); let o = db;
-        for (let i = 0; i < p.length - 1; i++) { if (o[p[i]] == null) o[p[i]] = {}; o = o[p[i]]; }
-        if (val === null) delete o[p[p.length - 1]]; else o[p[p.length - 1]] = copia(val);
-      }
-      emitir();
-    },
-    nuevoId() { return 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); },
-    reiniciar() { db = { asientos: {}, ventas: {}, historial: {}, usuarios: {}, bloqueos: {}, contador: 0 }; emitir(); }
-  };
-  db = { asientos: {}, ventas: {}, historial: {}, usuarios: {}, bloqueos: {}, contador: 0 };
-  return api;
-}
-function almacenFirebase(fdb, alCambiar) {
+function almacenFirebase(fdb, raiz, alCambiar) {
+  const R = ruta => fdb.ref(raiz + '/' + ruta);
   const cache = { asientos: {}, ventas: {}, historial: {}, usuarios: {}, bloqueos: {} };
   const oir = (clave, ref) => ref.on('value', s => { cache[clave] = s.val() || {}; alCambiar(cache); },
     e => toast('No se pudo leer "' + clave + '": ' + e.message, 'error'));
-  oir('asientos', fdb.ref('asientos'));
-  oir('ventas', fdb.ref('ventas'));
-  oir('historial', fdb.ref('historial').limitToLast(600));
-  oir('usuarios', fdb.ref('usuarios'));
-  oir('bloqueos', fdb.ref('bloqueos'));
+  oir('asientos', R('asientos'));
+  oir('ventas', R('ventas'));
+  oir('historial', R('historial').limitToLast(600));
+  oir('usuarios', R('usuarios'));
+  oir('bloqueos', R('bloqueos'));
   fdb.ref('.info/connected').on('value', s => { EN_LINEA = !!s.val(); pintarChips(); });
   return {
-    modo: 'firebase',
-    async txAsientos(fn) { const r = await fdb.ref('asientos').transaction(cur => fn(cur || {})); return !!r.committed; },
-    async siguienteNum() { const r = await fdb.ref('contador').transaction(n => (n || 0) + 1); return r.snapshot.val(); },
-    async actualizar(obj) { await fdb.ref().update(obj); },
-    nuevoId() { return fdb.ref('historial').push().key; }
+    async txAsientos(fn) { const r = await R('asientos').transaction(cur => fn(cur || {})); return !!r.committed; },
+    async txNumeros(fn) { const r = await R('numeros').transaction(cur => fn(cur || {})); return !!r.committed; },
+    async actualizar(obj) { await fdb.ref(raiz).update(obj); },
+    nuevoId() { return R('historial').push().key; }
   };
 }
 
@@ -465,7 +450,6 @@ let S = { asientos: {}, ventas: {}, historial: {}, usuarios: {}, bloqueos: {} };
 let U = null;            // {uid, nombre}: el nombre queda como responsable de cada acción
 let almacen = null;
 let EN_LINEA = true;
-let cerrarSesion = null;
 const UI = {
   tab: 'mapa', sel: new Set(), selTipo: null, zoom: 'todo', reubicar: null,
   filtro: 'activas', q: '', modal: null,
@@ -523,6 +507,30 @@ function soltar(cur, ids, idVenta) {
   for (const s of ids) if (cur[s] && cur[s].v === idVenta) { if (cur[s].p) cur[s] = { p: cur[s].p }; else delete cur[s]; }
 }
 
+const codigoDe = n => 'V-' + String(n).padStart(4, '0');
+const sugeridoNum = () => Object.values(S.ventas).reduce((m, v) => Math.max(m, Number(v.num) || 0), 0) + 1;
+function numeroUsado(n) {
+  const v = Object.values(S.ventas).find(x => Number(x.num) === n);
+  return 'El N.º de venta ' + n + ' ya lo usa ' + (v ? v.codigo + ' (' + ((v.comprador || {}).nombre || '') + ')' : 'otra venta') + '. Elige otro número.';
+}
+// Reserva un N.º de venta. Si el número era el sugerido (auto) y otra persona ya lo tomó, toma el siguiente libre.
+async function reservarNumero(idVenta, pedido, auto) {
+  let tomado = null;
+  const ok = await almacen.txNumeros(cur => {
+    let n = pedido; tomado = null;
+    if (cur['n' + n]) { if (!auto) return; while (cur['n' + n]) n++; }
+    cur['n' + n] = idVenta; tomado = n; return cur;
+  });
+  if (!ok || tomado == null) throw new Error(numeroUsado(pedido));
+  return tomado;
+}
+async function moverNumero(idVenta, viejo, nuevo) {
+  const ok = await almacen.txNumeros(cur => {
+    if (cur['n' + nuevo] && cur['n' + nuevo] !== idVenta) return;
+    delete cur['n' + viejo]; cur['n' + nuevo] = idVenta; return cur;
+  });
+  if (!ok) throw new Error(numeroUsado(nuevo));
+}
 async function crearVenta(d) {
   const id = almacen.nuevoId(), ids = ordenar(d.asientos), deCupo = !!d.deCupo;
   const ok = await almacen.txAsientos(cur => {
@@ -531,11 +539,14 @@ async function crearVenta(d) {
     return cur;
   });
   if (!ok) throw new Error('Una o más butacas ya no están disponibles. Revisa el mapa y elige de nuevo.');
+  let num = null;
   try {
-    const num = await almacen.siguienteNum(), ahora = Date.now();
+    const pedido = d.num > 0 ? d.num : sugeridoNum();
+    num = await reservarNumero(id, pedido, !(d.num > 0) || !!d.numAuto);
+    const ahora = Date.now();
     const { precios, total } = calcularPrecios(ids);
     const venta = {
-      num, codigo: 'V-' + String(num).padStart(4, '0'), estado: 'activa', canal: d.canal === 'fisica' || d.canal === 'virtual' ? d.canal : (deCupo ? 'fisica' : 'virtual'), bloqueo: deCupo ? (d.bloqueo || '') : '',
+      num, codigo: codigoDe(num), estado: 'activa', canal: d.canal === 'fisica' || d.canal === 'virtual' ? d.canal : (deCupo ? 'fisica' : 'virtual'), bloqueo: deCupo ? (d.bloqueo || '') : '',
       asientos: ids, precios, total,
       comprador: { nombre: d.nombre, doc: d.doc || '', tel: d.tel || '' },
       pago: { medio: d.medio, estado: d.pagoEstado, fecha: d.pagoEstado === 'pagado' ? (d.pagoFecha === undefined ? ahora : d.pagoFecha) : null },
@@ -548,11 +559,13 @@ async function crearVenta(d) {
     return id;
   } catch (e) {
     await almacen.txAsientos(cur => { soltar(cur, ids, id); return cur; });
+    if (num != null) await almacen.txNumeros(cur => { if (cur['n' + num] !== id) return; delete cur['n' + num]; return cur; });
     throw e;
   }
 }
 
 const CAMPOS = [
+  ['num', 'N.º de venta', v => v ? codigoDe(v) : ''],
   ['comprador.nombre', 'Comprador'], ['comprador.doc', 'DNI'], ['comprador.tel', 'Teléfono'],
   ['total', 'Total', sol],
   ['pago.medio', 'Medio de pago'], ['pago.estado', 'Pago', v => v === 'pendiente' ? 'Pendiente' : 'Pagado'],
@@ -568,6 +581,7 @@ async function guardarVenta(id, nueva, accion) {
       cambios.push({ campo: nombre, antes: fmt ? fmt(a) : String(a == null ? '' : a), despues: fmt ? fmt(d) : String(d == null ? '' : d) });
   }
   if (!cambios.length) return 'igual';
+  if (nueva.num !== antes.num) { await moverNumero(id, antes.num, nueva.num); nueva.codigo = codigoDe(nueva.num); }
   const ahora = Date.now();
   if (nueva.pago.estado === 'pagado' && antes.pago && antes.pago.estado === 'pendiente') nueva.pago.fecha = ahora;
   if (nueva.pago.estado === 'pendiente') nueva.pago.fecha = null;
@@ -666,14 +680,16 @@ function montar() {
       <div class="mbarra">
         <div class="modo" id="modo" role="group" aria-label="Qué hacer al tocar una butaca"><button type="button" data-a="modo" data-v="vender">Vender</button><button type="button" data-a="modo" data-v="bloquear">Bloquear</button></div>
         <button type="button" class="btn mini" id="btnZoom" data-a="zoom"></button>
+        <button type="button" class="btn mini" data-a="capturaGeneral">Captura general</button>
         <span class="ira">Ir a <button type="button" class="sC" data-a="ir" data-v="C">Segundo piso</button><button type="button" class="sB" data-a="ir" data-v="B">Fondo</button><button type="button" class="sA" data-a="ir" data-v="A">Frente</button></span>
       </div>
       <p class="aviso" id="avisoMapa" hidden></p>
       <div class="mscroll" id="mscroll"><div class="mapa" id="mapa"></div></div>
     </section>
     <section id="t-ventas" class="pad" hidden>
-      <div class="busca"><input type="search" id="q" placeholder="Buscar por nombre, DNI, teléfono, código o butaca" aria-label="Buscar ventas"></div>
+      <div class="busca"><input type="search" id="q" placeholder="Buscar comprador, DNI, teléfono, N.º de venta o butaca" aria-label="Buscar ventas" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
       <div class="filtros" id="filtros"></div>
+      <p class="nota" id="nRes" aria-live="polite"></p>
       <div id="listaVentas"></div>
     </section>
     <section id="t-resumen" class="pad" hidden></section>
@@ -690,7 +706,7 @@ function construirMapa() {
   for (const blq of PLANO) {
     const sc = SECTORES[blq.sector];
     h += `<div class="sec-tit s${blq.sector}" id="sec-${blq.sector}"><b>${sc.nombre}</b><em>${sol(sc.precio)}</em></div>
-      <div class="sec-cap"><button type="button" class="btn mini" data-a="captura" data-v="${blq.sector}|venta">Captura para vender</button><button type="button" class="btn mini" data-a="captura" data-v="${blq.sector}|ocupacion">Captura de ocupación</button></div>`;
+      <div class="sec-cap"><button type="button" class="btn mini" data-a="captura" data-v="${blq.sector}|venta">Captura para ventas</button><button type="button" class="btn mini" data-a="captura" data-v="${blq.sector}|ocupacion">Captura de diagnóstico</button></div>`;
     for (const f of blq.filas) {
       if (!f) { h += '<div class="sep"></div>'; continue; }
       let c = '';
@@ -769,8 +785,7 @@ function pintar() {
 }
 function pintarChips() {
   const c = $('#chipModo'); if (!c || !almacen) return;
-  if (almacen.modo === 'demo') { c.className = 'chip demo'; c.textContent = 'Demo: no se guarda'; }
-  else { c.className = 'chip ' + (EN_LINEA ? 'ok' : 'off'); c.textContent = EN_LINEA ? 'En línea' : 'Sin conexión'; }
+  c.className = 'chip ' + (EN_LINEA ? 'ok' : 'off'); c.textContent = EN_LINEA ? 'En línea' : 'Sin conexión';
   if (U) $('#chipUsr').textContent = U.nombre;
 }
 function pintarOcupacion(st) {
@@ -830,19 +845,26 @@ function etiquetas(v) {
   h += '<span class="et cupo">' + (v.canal === 'fisica' ? 'Física' : 'Virtual') + '</span>';
   return h;
 }
+const norm = s => String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function textoVenta(v) {
+  const c = v.comprador || {}, ids = asientosDe(v), solo = x => String(x || '').replace(/\D/g, '');
+  return norm([v.codigo, v.num, c.nombre, c.doc, c.tel, solo(c.tel), solo(c.doc), v.vendedor, (v.entrega || {}).responsable, (v.pago || {}).medio, v.obs, ids.join(' '), resumenAsientos(ids)].join(' '));
+}
 function pintarVentas() {
   $('#filtros').innerHTML = FILTROS.map(([k, n]) => `<button type="button" data-a="filtro" data-v="${k}" aria-pressed="${UI.filtro === k}">${n}</button>`).join('');
-  const q = UI.q.trim().toLowerCase();
+  const tokens = norm(UI.q).split(/\s+/).filter(Boolean), q = tokens.length > 0;
   const lista = Object.entries(S.ventas).filter(([id, v]) => {
     const act = v.estado === 'activa';
-    if (UI.filtro === 'anuladas' ? act : !act) return false;
+    // Al buscar en "Todas" también se encuentran las ventas anuladas
+    if (UI.filtro === 'anuladas' ? act : (!act && !(q && UI.filtro === 'activas'))) return false;
     if (UI.filtro === 'pago' && !(v.pago && v.pago.estado === 'pendiente')) return false;
     if (UI.filtro === 'entrega' && v.entrega && v.entrega.hecha) return false;
     if ((UI.filtro === 'virtual' || UI.filtro === 'fisica') && (v.canal === 'fisica' ? 'fisica' : 'virtual') !== UI.filtro) return false;
     if (!q) return true;
-    const c = v.comprador || {};
-    return [v.codigo, c.nombre, c.doc, c.tel, v.vendedor, asientosDe(v).join(' '), resumenAsientos(asientosDe(v))].join(' ').toLowerCase().includes(q);
+    const hay = textoVenta(v);
+    return tokens.every(t => hay.includes(t));
   }).sort((a, b) => (b[1].num || 0) - (a[1].num || 0));
+  $('#nRes').textContent = lista.length ? (q ? plural(lista.length, 'resultado', 'resultados') : plural(lista.length, 'venta', 'ventas')) : '';
   $('#listaVentas').innerHTML = lista.length ? lista.map(([id, v]) => {
     const ids = asientosDe(v), cls = v.estado !== 'activa' ? 'anul' : (v.pago && v.pago.estado === 'pendiente') ? 'pend' : '';
     return `<button type="button" class="venta ${cls}" data-a="detalle" data-v="${esc(id)}">
@@ -883,9 +905,11 @@ function pintarResumen(st) {
       <div><strong>${st.canal.fisica}</strong>en venta física</div>
     </div>
   </div>
-  <div class="caja"><h2>Exportar</h2>
-    <p class="nota">Archivos CSV que se abren en Excel. El de butacas tiene las mismas columnas del Excel de control, más los datos nuevos.</p>
-    <div class="accs"><button type="button" class="btn" data-a="exportarButacas">Descargar butacas y ventas</button><button type="button" class="btn" data-a="exportarHistorial">Descargar historial</button></div>
+  <div class="caja"><h2>Informes en Word</h2>
+    <p class="nota">Documentos listos para presentar, con los datos de este momento.</p>
+    <div class="doc-op"><div><b>Situación actual</b><span class="nota">Fecha del informe, monto recaudado, número de ventas y mapa de butacas en su estado actual. Para presentar a la jefatura.</span></div><button type="button" class="btn pri" data-a="docSituacion">Generar documento</button></div>
+    <div class="doc-op"><div><b>Resumen de ventas</b><span class="nota">Resumen general, relación de ventas y una cartilla por cada venta. Para contabilidad o secretaría.</span></div><button type="button" class="btn pri" data-a="docVentas">Generar documento</button></div>
+    <details class="otros"><summary>Copia de datos en CSV (para Excel)</summary><div class="accs"><button type="button" class="btn mini" data-a="exportarButacas">Butacas y ventas</button><button type="button" class="btn mini" data-a="exportarHistorial">Historial</button></div></details>
   </div>`;
 }
 
@@ -916,11 +940,8 @@ function pintarGestion(st) {
   </div>
   <div class="caja"><h2>Sesión</h2>
     <p>Estás como <b>${esc(U.nombre)}</b>. Ese nombre queda en el historial de todo lo que registres o cambies.</p>
-    ${almacen.modo === 'demo'
-      ? `<p class="nota">Modo demo: los datos se pierden al cerrar o recargar la página.</p>
-         <div class="accs"><button type="button" class="btn" data-a="cambiarUsuario">Cambiar nombre</button><button type="button" class="btn pel" data-a="reiniciarDemo">Reiniciar datos de prueba</button></div>`
-      : `<div class="accs"><button type="button" class="btn" data-a="salir">Cerrar sesión</button></div>`}
-    ${almacen.modo === 'firebase' && eq.length ? `<h3>Equipo</h3><p class="nota">${eq.map(([uid, p]) => esc(p.nombre)).join(', ')}</p>` : ''}
+    <div class="accs"><button type="button" class="btn" data-a="cambiarUsuario">Cambiar nombre</button><button type="button" class="btn pel" data-a="salir">Salir de este dispositivo</button></div>
+    ${eq.length ? `<h3>Personas que han entrado</h3><p class="nota">${esc([...new Set(eq.map(([uid, p]) => p.nombre).filter(Boolean))].join(', '))}</p>` : ''}
   </div>
   <div class="caja"><h2>Historial</h2>
     ${hist.length ? `<ul class="hist">${hist.map(h => lineaHist(h, true)).join('')}</ul>` : '<p class="nota">Aquí aparece cada venta, cambio, anulación y bloqueo, con fecha y responsable.</p>'}
@@ -943,7 +964,7 @@ function trazoButaca(g, x, y, w) {
   g.lineTo(x + r2, y + w); g.quadraticCurveTo(x, y + w, x, y + w - r2);
   g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
 }
-function dibujarButaca(g, x, y, w, e, num, sc, modo, fuente) {
+function dibujarButaca(g, x, y, w, e, num, sc, modo, fuente, sinNum) {
   let relleno, texto = null, borde = null, trama = false, dash = false;
   if (modo === 'venta') {
     if (e === 'libre') { relleno = sc.c; texto = '#FFFFFF'; }
@@ -959,7 +980,7 @@ function dibujarButaca(g, x, y, w, e, num, sc, modo, fuente) {
     g.restore();
   }
   if (borde) { trazoButaca(g, x, y, w); g.strokeStyle = borde; g.lineWidth = 2.5; g.setLineDash(dash ? [7, 5] : []); g.stroke(); g.setLineDash([]); }
-  if (texto) { g.fillStyle = texto; g.font = '700 ' + Math.round(w * 0.46) + 'px ' + fuente; g.textAlign = 'center'; g.fillText(String(num), x + w / 2, y + w / 2 + w * 0.16); }
+  if (texto && !sinNum) { g.fillStyle = texto; g.font = '700 ' + Math.round(w * 0.46) + 'px ' + fuente; g.textAlign = 'center'; g.fillText(String(num), x + w / 2, y + w / 2 + w * 0.16); }
 }
 async function generarCaptura(sector, modo) {
   const FUENTE = '"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif';
@@ -984,7 +1005,7 @@ async function generarCaptura(sector, modo) {
   g.fillText((EVENTO.nombre + '  ·  ' + EVENTO.subtitulo).toUpperCase(), PAD, 62);
   g.fillStyle = '#CFC8E4'; g.font = '500 26px ' + FUENTE; g.fillText(EVENTO.lugar + ', ' + EVENTO.fecha, PAD, 106);
   g.textAlign = 'right'; g.fillStyle = '#FFFFFF'; g.font = '700 30px ' + FUENTE;
-  g.fillText(ocup ? 'OCUPACIÓN DE LA ZONA' : 'BUTACAS DISPONIBLES', W - PAD, 62);
+  g.fillText(ocup ? 'DIAGNÓSTICO DE LA ZONA' : 'BUTACAS DISPONIBLES', W - PAD, 62);
   // Zona, precio y cifras
   g.textAlign = 'left'; g.font = '700 56px ' + FUENTE;
   const nom = sc.nombre.toUpperCase(), bw = g.measureText(nom).width + 64;
@@ -1042,11 +1063,80 @@ async function generarCaptura(sector, modo) {
   g.fillText('Actualizado ' + ahora.toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) + '  ·  Generado por ' + U.nombre, PAD, H - 26);
   const blob = await new Promise((ok, mal) => cv.toBlob(b => b ? ok(b) : mal(new Error('el navegador no pudo crear la imagen')), 'image/png'));
   const hhmm = String(ahora.getHours()).padStart(2, '0') + String(ahora.getMinutes()).padStart(2, '0');
-  return { blob, url: URL.createObjectURL(blob), nombre: sc.nombre.toLowerCase().replace(/\s+/g, '-') + (ocup ? '-ocupacion-' : '-disponibles-') + hhmm + '.png' };
+  return { blob, url: URL.createObjectURL(blob), nombre: sc.nombre.toLowerCase().replace(/\s+/g, '-') + (ocup ? '-diagnostico-' : '-ventas-') + hhmm + '.png' };
 }
 function trazoRect(g, x, y, w, h, r) {
   g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r); g.lineTo(x + w, y + h - r);
   g.quadraticCurveTo(x + w, y + h, x + w - r, y + h); g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r); g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
+}
+function pintarZona(g, sector, y, c, fuente, fn) {
+  const blq = PLANO.find(b => b.sector === sector), cel = c.step - 5;
+  for (const f of blq.filas) {
+    if (!f) { y += c.step / 2; continue; }
+    g.font = '700 22px ' + fuente; g.textAlign = 'center'; g.fillStyle = '#51476B';
+    g.fillText(f[0], c.pad + c.lab / 2, y + cel / 2 + 8); g.fillText(f[0], c.W - c.pad - c.lab / 2, y + cel / 2 + 8);
+    for (const [col, n0, cant] of f[1]) for (let i = 0; i < cant; i++) fn(sector + '-' + f[0] + '-' + (n0 + i), n0 + i, c.pad + c.lab + (col + i + blq.off - 1) * c.step, y);
+    y += c.step;
+  }
+  return y;
+}
+function ajustarTexto(g, t, max) {
+  if (g.measureText(t).width <= max) return t;
+  while (t.length > 1 && g.measureText(t + '…').width > max) t = t.slice(0, -1);
+  return t + '…';
+}
+async function generarCapturaCliente(v) {
+  const FUENTE = '"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif';
+  try { if (document.fonts && document.fonts.load) await Promise.race([document.fonts.load('700 30px "Barlow Semi Condensed"'), new Promise(r => setTimeout(r, 900))]); } catch (e) { /* respaldo */ }
+  const ids = asientosDe(v), propios = new Set(ids), zonas = ['C', 'B', 'A'].filter(k => ids.some(id => ASIENTOS[id].sector === k));
+  const CEL = 44, STEP = 49, LAB = 60, PAD = 40, W = 2 * PAD + 2 * LAB + 25 * STEP - 5, c = { pad: PAD, lab: LAB, step: STEP, W };
+  const lineas = resumenAsientos(ids).split('; ');
+  const alto = k => PLANO.find(b => b.sector === k).filas.reduce((h, f) => h + (f ? STEP : STEP / 2), 0);
+  let H = 150 + 205 + 40 + lineas.length * 50 + 14;
+  for (const k of zonas) H += 76 + alto(k) + (k === 'A' ? 96 : 66) + 24;
+  H += 60;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'); g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#241A3A'; g.fillRect(0, 0, W, 150);
+  g.textAlign = 'left'; g.fillStyle = '#F5B400'; g.font = '700 34px ' + FUENTE; g.fillText((EVENTO.nombre + '  ·  ' + EVENTO.subtitulo).toUpperCase(), PAD, 62);
+  g.fillStyle = '#CFC8E4'; g.font = '500 26px ' + FUENTE; g.fillText(EVENTO.lugar + ', ' + EVENTO.fecha, PAD, 106);
+  g.textAlign = 'right'; g.fillStyle = '#FFFFFF'; g.font = '700 30px ' + FUENTE; g.fillText('TUS BUTACAS', W - PAD, 62);
+  let y = 150;
+  g.textAlign = 'left'; g.fillStyle = '#857F9B'; g.font = '600 24px ' + FUENTE; g.fillText('COMPRADOR', PAD, y + 50);
+  g.fillStyle = '#241A3A'; g.font = '700 56px ' + FUENTE; g.fillText(ajustarTexto(g, (v.comprador || {}).nombre || '', W - 2 * PAD), PAD, y + 116);
+  const pend = v.pago && v.pago.estado === 'pendiente';
+  g.fillStyle = '#51476B'; g.font = '500 28px ' + FUENTE; g.fillText(v.codigo + '  ·  ' + entradas(ids.length) + '  ·  ' + sol(v.total) + '  ·  ' + (pend ? 'Pago pendiente' : 'Pagado'), PAD, y + 164);
+  y += 205; g.fillStyle = '#DCD8E8'; g.fillRect(PAD, y, W - 2 * PAD, 2); y += 40;
+  for (const l of lineas) {
+    const sc = Object.values(SECTORES).find(z => l.indexOf(z.nombre) === 0) || SECTORES.A, m = /^(.*?), fila (.*?): (.*)$/.exec(l);
+    g.fillStyle = sc.c; g.beginPath(); g.arc(PAD + 14, y + 12, 13, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#241A3A'; g.font = '700 34px ' + FUENTE;
+    g.fillText(m ? m[1] + '  ·  Fila ' + m[2] + '  ·  ' + (/^\d+$/.test(m[3]) ? 'Butaca ' : 'Butacas ') + m[3] : l, PAD + 44, y + 24);
+    y += 50;
+  }
+  y += 14;
+  for (const k of zonas) {
+    const sc = SECTORES[k];
+    g.textAlign = 'left'; g.font = '700 32px ' + FUENTE; const nom = sc.nombre.toUpperCase(), bw = g.measureText(nom).width + 40;
+    g.fillStyle = sc.c; trazoRect(g, PAD, y, bw, 50, 12); g.fill(); g.fillStyle = '#FFFFFF'; g.fillText(nom, PAD + 20, y + 36);
+    g.fillStyle = '#51476B'; g.font = '500 24px ' + FUENTE; g.fillText('Tus butacas están resaltadas', PAD + bw + 18, y + 34);
+    y += 76;
+    y = pintarZona(g, k, y, c, FUENTE, (id, num, x, yy) => {
+      trazoButaca(g, x, yy, CEL);
+      if (propios.has(id)) {
+        g.fillStyle = sc.c; g.fill(); g.lineWidth = 4; g.strokeStyle = '#241A3A'; g.stroke();
+        g.fillStyle = '#FFFFFF'; g.font = '700 ' + Math.round(CEL * 0.46) + 'px ' + FUENTE; g.textAlign = 'center'; g.fillText(String(num), x + CEL / 2, yy + CEL / 2 + CEL * 0.16);
+      } else { g.fillStyle = '#ECE9F3'; g.fill(); }
+    });
+    g.textAlign = 'center';
+    if (k === 'A') { g.fillStyle = '#241A3A'; trazoRect(g, PAD + LAB, y + 12, W - 2 * (PAD + LAB), 54, 10); g.fill(); g.fillStyle = '#FFFFFF'; g.font = '700 26px ' + FUENTE; g.fillText('ESCENARIO', W / 2, y + 48); y += 96; }
+    else { g.fillStyle = '#857F9B'; g.font = '600 24px ' + FUENTE; g.fillText('↓ Hacia el escenario', W / 2, y + 34); y += 66; }
+    y += 24;
+  }
+  g.textAlign = 'left'; g.fillStyle = '#857F9B'; g.font = '500 22px ' + FUENTE; g.fillText('Venta ' + v.codigo + '  ·  Generado el ' + fechaLarga(Date.now()), PAD, H - 26);
+  const blob = await new Promise((ok, mal) => cv.toBlob(b => b ? ok(b) : mal(new Error('el navegador no pudo crear la imagen')), 'image/png'));
+  const slug = norm((v.comprador || {}).nombre).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
+  return { blob, url: URL.createObjectURL(blob), nombre: 'butacas-' + String(v.codigo).toLowerCase() + (slug ? '-' + slug : '') + '.png' };
 }
 function hojaImagen(m) {
   let compartir = false;
@@ -1054,7 +1144,339 @@ function hojaImagen(m) {
   return `<header class="hoja-cab"><h2>${esc(m.titulo)}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
     <div class="hoja-cuerpo"><div class="cap-wrap"><img class="cap-img" src="${m.url}" alt="${esc(m.titulo)}"></div>
       <p class="nota">${compartir ? 'Compártela por WhatsApp u otra app, o guárdala en el teléfono.' : 'Mantén presionada la imagen para guardarla o compartirla, o usa Descargar.'} Se guarda en tamaño completo: al abrirla puedes ampliar para ver los números.</p></div>
-    <footer class="hoja-pie"><button type="button" class="btn" data-a="cerrar">Cerrar</button><button type="button" class="btn ${compartir ? '' : 'pri'}" data-a="descargarImagen">Descargar</button>${compartir ? '<button type="button" class="btn pri" data-a="compartirImagen">Compartir</button>' : ''}</footer>`;
+    <footer class="hoja-pie"><button type="button" class="btn" data-a="cerrar">Cerrar</button><button type="button" class="btn ${compartir ? '' : 'pri'}" data-a="descargarArchivo">Descargar</button>${compartir ? '<button type="button" class="btn pri" data-a="compartirArchivo">Compartir</button>' : ''}</footer>`;
+}
+
+/* =====================================================================
+   INFORMES EN WORD (.docx)
+   Se arman en el navegador y no usan librerías externas: un .docx es un
+   zip de archivos XML, así que se escribe directamente (sin compresión).
+   ===================================================================== */
+const XML = s => String(s == null ? '' : s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zipear(archivos, mime) {
+  const enc = new TextEncoder(), partes = [], central = [], ahora = new Date();
+  const dosT = (ahora.getHours() << 11) | (ahora.getMinutes() << 5) | (ahora.getSeconds() >> 1);
+  const dosD = ((ahora.getFullYear() - 1980) << 9) | ((ahora.getMonth() + 1) << 5) | ahora.getDate();
+  let pos = 0;
+  for (const a of archivos) {
+    const nom = enc.encode(a.n), crc = crc32(a.d), len = a.d.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, dosT, true); lh.setUint16(12, dosD, true); lh.setUint32(14, crc, true); lh.setUint32(18, len, true); lh.setUint32(22, len, true);
+    lh.setUint16(26, nom.length, true); lh.setUint16(28, 0, true);
+    partes.push(new Uint8Array(lh.buffer), nom, a.d);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+    ch.setUint16(12, dosT, true); ch.setUint16(14, dosD, true); ch.setUint32(16, crc, true); ch.setUint32(20, len, true); ch.setUint32(24, len, true);
+    ch.setUint16(28, nom.length, true); ch.setUint32(42, pos, true);
+    central.push(new Uint8Array(ch.buffer), nom);
+    pos += 30 + nom.length + len;
+  }
+  let csz = 0; for (const c of central) csz += c.length;
+  const fin = new DataView(new ArrayBuffer(22));
+  fin.setUint32(0, 0x06054b50, true); fin.setUint16(8, archivos.length, true); fin.setUint16(10, archivos.length, true); fin.setUint32(12, csz, true); fin.setUint32(16, pos, true);
+  return new Blob([...partes, ...central, new Uint8Array(fin.buffer)], { type: mime });
+}
+function bytesDe(blob) {
+  return new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(new Uint8Array(r.result)); r.onerror = () => mal(new Error('no se pudo leer la imagen')); r.readAsArrayBuffer(blob); });
+}
+
+function Word(pie) {
+  const cuerpo = [], media = [];
+  const C = { ink: '241A3A', gris: '51476B', claro: 'F2F1F7', linea: 'DCD8E8' };
+  const run = (t, o = {}) => '<w:r><w:rPr>' + (o.b ? '<w:b/>' : '') + (o.i ? '<w:i/>' : '') + (o.color ? '<w:color w:val="' + o.color + '"/>' : '') + (o.sz ? '<w:sz w:val="' + o.sz + '"/><w:szCs w:val="' + o.sz + '"/>' : '') + '</w:rPr><w:t xml:space="preserve">' + XML(t) + '</w:t></w:r>';
+  const par = (runs, o = {}) => '<w:p><w:pPr>' + (o.estilo ? '<w:pStyle w:val="' + o.estilo + '"/>' : '') + (o.keep ? '<w:keepNext/>' : '') + (o.salto ? '<w:pageBreakBefore/>' : '') +
+    (o.borde ? '<w:pBdr><w:bottom w:val="single" w:sz="12" w:space="6" w:color="' + o.borde + '"/></w:pBdr>' : '') +
+    '<w:spacing w:before="' + (o.antes || 0) + '" w:after="' + (o.despues == null ? 80 : o.despues) + '"/>' + (o.jc ? '<w:jc w:val="' + o.jc + '"/>' : '') + '</w:pPr>' + (Array.isArray(runs) ? runs.join('') : runs) + '</w:p>';
+  const celda = (contenido, ancho, o = {}) => '<w:tc><w:tcPr><w:tcW w:w="' + ancho + '" w:type="dxa"/>' + (o.span ? '<w:gridSpan w:val="' + o.span + '"/>' : '') +
+    (o.fondo ? '<w:shd w:val="clear" w:color="auto" w:fill="' + o.fondo + '"/>' : '') + '<w:vAlign w:val="' + (o.v || 'center') + '"/></w:tcPr>' + contenido + '</w:tc>';
+  const fila = (celdas, o = {}) => '<w:tr><w:trPr><w:cantSplit/>' + (o.cab ? '<w:tblHeader/>' : '') + '</w:trPr>' + celdas.join('') + '</w:tr>';
+  const tabla = (anchos, filas, o = {}) => {
+    const b = '<w:%s w:val="single" w:sz="' + (o.bsz || 4) + '" w:space="0" w:color="' + (o.borde || C.linea) + '"/>';
+    return '<w:tbl><w:tblPr><w:tblW w:w="' + anchos.reduce((a, c) => a + c, 0) + '" w:type="dxa"/><w:tblBorders>' +
+      ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map(k => b.replace('%s', k)).join('') +
+      '</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="50" w:type="dxa"/><w:left w:w="100" w:type="dxa"/><w:bottom w:w="50" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>' +
+      anchos.map(a => '<w:gridCol w:w="' + a + '"/>').join('') + '</w:tblGrid>' + filas.join('') + '</w:tbl>';
+  };
+  const api = {
+    C, run, par, celda, fila, tabla,
+    add(x) { cuerpo.push(x); },
+    h1(t, o = {}) { cuerpo.push(par(run(t), Object.assign({ estilo: 'Heading1' }, o))); },
+    h2(t) { cuerpo.push(par(run(t), { estilo: 'Heading2' })); },
+    texto(t, o = {}) { cuerpo.push(par(run(t, { sz: 21, color: o.color, b: o.b, i: o.i }), { despues: o.despues, jc: o.jc, keep: o.keep })); },
+    espacio(n) { cuerpo.push(par('', { despues: n == null ? 120 : n })); },
+    // Tabla con encabezado oscuro. der: columnas alineadas a la derecha. total: la última fila es de totales.
+    datos(cabs, filas, anchos, o = {}) {
+      const der = o.der || [];
+      const cab = fila(cabs.map((c, i) => celda(par(run(c, { b: 1, color: 'FFFFFF', sz: 19 }), { despues: 0, jc: der.includes(i) ? 'right' : null }), anchos[i], { fondo: C.ink })), { cab: true });
+      const cuerpoT = filas.map((f, ri) => {
+        const esTotal = o.total && ri === filas.length - 1;
+        return fila(f.map((c, i) => celda((Array.isArray(c) ? c : [c]).map(t => par(run(String(t), { sz: 19, b: esTotal }), { despues: 0, jc: der.includes(i) ? 'right' : null })).join(''), anchos[i], { fondo: esTotal ? C.claro : null })));
+      });
+      cuerpo.push(tabla(anchos, [cab, ...cuerpoT]));
+      cuerpo.push(par('', { despues: 120 }));
+    },
+    // Indicadores grandes: filas de 3 casillas {t: título, v: valor, s: nota}
+    indicadores(filas) {
+      const an = [3213, 3213, 3212];
+      cuerpo.push(tabla(an, filas.map(f => fila(f.map((x, i) => celda(
+        par(run(x.t, { sz: 18, color: C.gris }), { despues: 20 }) + par(run(x.v, { b: 1, sz: 38, color: C.ink }), { despues: 20 }) + par(run(x.s || ' ', { sz: 17, color: C.gris }), { despues: 0 }),
+        an[i], { fondo: C.claro })))), { borde: 'FFFFFF', bsz: 24 }));
+      cuerpo.push(par('', { despues: 120 }));
+    },
+    imagen(bytes, wpx, hpx, maxW, maxH, alt) {
+      const id = media.length + 1; media.push({ n: 'image' + id + '.png', d: bytes });
+      let wc = maxW, hc = wc * hpx / wpx; if (hc > maxH) { hc = maxH; wc = hc * wpx / hpx; }
+      const cx = Math.round(wc * 360000), cy = Math.round(hc * 360000);
+      cuerpo.push('<w:p><w:pPr><w:spacing w:before="0" w:after="80"/><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="' + cx + '" cy="' + cy + '"/>' +
+        '<wp:docPr id="' + id + '" name="Imagen ' + id + '" descr="' + XML(alt || '') + '"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>' +
+        '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="' + id + '" name="image' + id + '.png"/><pic:cNvPicPr/></pic:nvPicPr>' +
+        '<pic:blipFill><a:blip r:embed="rIdImg' + id + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+        '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>');
+    },
+    construir(titulo, autor) {
+      const enc = new TextEncoder(), H = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+      const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
+      const sect = '<w:sectPr><w:footerReference w:type="default" r:id="rIdFtr"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>';
+      cuerpo.push(par('', { despues: 0 }));
+      const documento = H + '<w:document ' + NS + '><w:body>' + cuerpo.join('') + sect + '</w:body></w:document>';
+      const rp = '<w:rPr><w:color w:val="857F9B"/><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr>';
+      const campo = (cod, ph) => '<w:r>' + rp + '<w:fldChar w:fldCharType="begin"/></w:r><w:r>' + rp + '<w:instrText xml:space="preserve"> ' + cod + ' </w:instrText></w:r><w:r>' + rp + '<w:fldChar w:fldCharType="separate"/></w:r><w:r>' + rp + '<w:t>' + ph + '</w:t></w:r><w:r>' + rp + '<w:fldChar w:fldCharType="end"/></w:r>';
+      const txt = t => '<w:r>' + rp + '<w:t xml:space="preserve">' + XML(t) + '</w:t></w:r>';
+      const footer = H + '<w:ftr ' + NS + '><w:p><w:pPr><w:spacing w:before="0" w:after="0"/><w:jc w:val="center"/></w:pPr>' + txt(pie + '  ·  Página ') + campo('PAGE', '1') + txt(' de ') + campo('NUMPAGES', '1') + '</w:p></w:ftr>';
+      const estilo = (id, nom, pPr, rPr) => '<w:style w:type="paragraph" w:styleId="' + id + '"><w:name w:val="' + nom + '"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr>' + pPr + '</w:pPr><w:rPr>' + rPr + '</w:rPr></w:style>';
+      const estilos = H + '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Calibri" w:cs="Calibri"/><w:sz w:val="21"/><w:szCs w:val="21"/><w:lang w:val="es-PE" w:eastAsia="es-PE" w:bidi="ar-SA"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="80" w:line="259" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
+        '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>' +
+        estilo('Heading1', 'heading 1', '<w:keepNext/><w:spacing w:before="320" w:after="140"/><w:outlineLvl w:val="0"/>', '<w:b/><w:bCs/><w:color w:val="241A3A"/><w:sz w:val="30"/><w:szCs w:val="30"/>') +
+        estilo('Heading2', 'heading 2', '<w:keepNext/><w:spacing w:before="200" w:after="100"/><w:outlineLvl w:val="1"/>', '<w:b/><w:bCs/><w:color w:val="51476B"/><w:sz w:val="24"/><w:szCs w:val="24"/>') +
+        '<w:style w:type="table" w:default="1" w:styleId="TableNormal"><w:name w:val="Normal Table"/><w:uiPriority w:val="99"/><w:semiHidden/><w:unhideWhenUsed/><w:tblPr><w:tblInd w:w="0" w:type="dxa"/><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="108" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="108" w:type="dxa"/></w:tblCellMar></w:tblPr></w:style></w:styles>';
+      const R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+      const rels = H + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdSty" Type="' + R + '/styles" Target="styles.xml"/><Relationship Id="rIdFtr" Type="' + R + '/footer" Target="footer1.xml"/>' +
+        media.map((m, i) => '<Relationship Id="rIdImg' + (i + 1) + '" Type="' + R + '/image" Target="media/' + m.n + '"/>').join('') + '</Relationships>';
+      const tipos = H + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/>' +
+        '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>';
+      const raiz = H + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="' + R + '/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>';
+      const core = H + '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>' + XML(titulo) + '</dc:title><dc:creator>' + XML(autor) + '</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">' + new Date().toISOString().replace(/\.\d+Z$/, 'Z') + '</dcterms:created></cp:coreProperties>';
+      const archivos = [
+        { n: '[Content_Types].xml', d: enc.encode(tipos) }, { n: '_rels/.rels', d: enc.encode(raiz) }, { n: 'docProps/core.xml', d: enc.encode(core) },
+        { n: 'word/document.xml', d: enc.encode(documento) }, { n: 'word/styles.xml', d: enc.encode(estilos) }, { n: 'word/footer1.xml', d: enc.encode(footer) },
+        { n: 'word/_rels/document.xml.rels', d: enc.encode(rels) }, ...media.map(m => ({ n: 'word/media/' + m.n, d: m.d }))
+      ];
+      return zipear(archivos, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    }
+  };
+  return api;
+}
+
+// Imagen del teatro completo (para el informe de situación actual)
+async function imagenTeatro(op) {
+  op = op || {};
+  const FUENTE = '"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif';
+  try { if (document.fonts && document.fonts.load) await Promise.race([document.fonts.load('700 30px "Barlow Semi Condensed"'), new Promise(r => setTimeout(r, 900))]); } catch (e) { /* respaldo */ }
+  const CEL = 40, GAP = 5, STEP = CEL + GAP, LAB = 64, PAD = 36, NCOL = 25, st = estadisticas().sec;
+  const W = 2 * PAD + 2 * LAB + NCOL * STEP - GAP, orden = ['C', 'B', 'A'];
+  const alto = blq => blq.filas.reduce((h, f) => h + (f ? STEP : STEP / 2), 0);
+  const TOP = op.encabezado ? 250 : 0;
+  let H = PAD + TOP; for (const k of orden) H += 78 + alto(PLANO.find(b => b.sector === k)) + 30;
+  H += 100 + 90 + (op.encabezado ? 50 : 0);
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'); g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, H);
+  if (op.encabezado) {
+    const t = estadisticas().tot;
+    g.fillStyle = '#241A3A'; g.fillRect(0, 0, W, 150);
+    g.textAlign = 'left'; g.fillStyle = '#F5B400'; g.font = '700 34px ' + FUENTE; g.fillText((EVENTO.nombre + '  ·  ' + EVENTO.subtitulo).toUpperCase(), PAD, 62);
+    g.fillStyle = '#CFC8E4'; g.font = '500 26px ' + FUENTE; g.fillText(EVENTO.lugar + ', ' + EVENTO.fecha, PAD, 106);
+    g.textAlign = 'right'; g.fillStyle = '#FFFFFF'; g.font = '700 30px ' + FUENTE; g.fillText('ESTADO GENERAL DEL TEATRO', W - PAD, 62);
+    g.textAlign = 'left'; g.fillStyle = '#241A3A'; g.font = '700 40px ' + FUENTE; g.fillText(t.libres + (t.libres === 1 ? ' disponible' : ' disponibles') + ' de ' + TOTAL + ' butacas', PAD, 212);
+    g.fillStyle = '#51476B'; g.font = '500 27px ' + FUENTE; g.fillText('Vendidas ' + t.vendidas + '  ·  Pago pendiente ' + t.reservadas + '  ·  Bloqueadas ' + t.cupoLibre, PAD, 252 - 4);
+  }
+  let y = PAD + TOP;
+  for (const k of orden) {
+    const blq = PLANO.find(b => b.sector === k), sc = SECTORES[k], o = st[k];
+    g.textAlign = 'left'; g.font = '700 34px ' + FUENTE;
+    const nom = sc.nombre.toUpperCase(), bw = g.measureText(nom).width + 40;
+    g.fillStyle = sc.c; trazoRect(g, PAD, y, bw, 52, 12); g.fill(); g.fillStyle = '#FFFFFF'; g.fillText(nom, PAD + 20, y + 38);
+    g.fillStyle = '#51476B'; g.font = '500 24px ' + FUENTE; g.fillText(sol(sc.precio), PAD + bw + 18, y + 36);
+    g.textAlign = 'right'; g.fillStyle = '#241A3A'; g.font = '600 24px ' + FUENTE;
+    g.fillText('Libres ' + o.libres + '  ·  Vendidas ' + o.vendidas + '  ·  Pago pend. ' + o.reservadas + '  ·  Bloqueadas ' + o.cupoLibre, W - PAD, y + 36);
+    y += 78;
+    for (const f of blq.filas) {
+      if (!f) { y += STEP / 2; continue; }
+      g.font = '700 22px ' + FUENTE; g.textAlign = 'center'; g.fillStyle = '#51476B';
+      g.fillText(f[0], PAD + LAB / 2, y + CEL / 2 + 8); g.fillText(f[0], W - PAD - LAB / 2, y + CEL / 2 + 8);
+      for (const [col, n0, cant] of f[1]) for (let i = 0; i < cant; i++)
+        dibujarButaca(g, PAD + LAB + (col + i + blq.off - 1) * STEP, y, CEL, estadoAsiento(k + '-' + f[0] + '-' + (n0 + i)).e, n0 + i, sc, 'ocupacion', FUENTE, !op.numeros);
+      y += STEP;
+    }
+    y += 30;
+  }
+  g.fillStyle = '#241A3A'; trazoRect(g, PAD + LAB, y, W - 2 * (PAD + LAB), 56, 10); g.fill();
+  g.fillStyle = '#FFFFFF'; g.font = '700 28px ' + FUENTE; g.textAlign = 'center'; g.fillText('ESCENARIO', W / 2, y + 38);
+  y += 100;
+  // Leyenda
+  let lx = PAD; g.textAlign = 'left'; g.font = '600 24px ' + FUENTE;
+  const sw = (e, sc) => { dibujarButaca(g, lx, y, 30, e, 0, sc, 'ocupacion', FUENTE, true); lx += 38; };
+  for (const k of orden) sw('libre', SECTORES[k]);
+  g.fillStyle = '#241A3A'; g.fillText('Disponible', lx, y + 23); lx += g.measureText('Disponible').width + 34;
+  for (const [e, t] of [['vendido', 'Vendida'], ['reservado', 'Pago pendiente'], ['cupo', 'Bloqueada']]) {
+    sw(e, SECTORES.A); g.fillStyle = '#241A3A'; g.fillText(t, lx, y + 23); lx += g.measureText(t).width + 34;
+  }
+  const blob = await new Promise((ok, mal) => cv.toBlob(b => b ? ok(b) : mal(new Error('el navegador no pudo crear la imagen')), 'image/png'));
+  if (op.encabezado) { g.textAlign = 'left'; g.fillStyle = '#857F9B'; g.font = '500 23px ' + FUENTE; g.fillText('Actualizado ' + new Date().toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) + '  ·  Generado por ' + U.nombre, PAD, H - 24); }
+  const blob2 = op.encabezado ? await new Promise((ok, mal) => cv.toBlob(b => b ? ok(b) : mal(new Error('el navegador no pudo crear la imagen')), 'image/png')) : blob;
+  return { blob: blob2, bytes: await bytesDe(blob2), w: W, h: H };
+}
+
+/* ---------- datos de las ventas, para los informes ---------- */
+const fechaLarga = ts => ts ? new Date(ts).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+const fechaCorta = ts => ts ? new Date(ts).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+const plural = (n, uno, varios) => n + ' ' + (n === 1 ? uno : varios);
+function resumenVentas() {
+  const R = { activas: [], anuladas: [], entradas: 0, total: 0, cobrado: 0, porCobrar: 0, ventasPend: 0, entOk: 0, entPend: 0,
+    zona: { A: { entradas: 0, total: 0, cobrado: 0, porCobrar: 0 }, B: { entradas: 0, total: 0, cobrado: 0, porCobrar: 0 }, C: { entradas: 0, total: 0, cobrado: 0, porCobrar: 0 } },
+    medio: {}, canal: { virtual: { ventas: 0, entradas: 0, total: 0 }, fisica: { ventas: 0, entradas: 0, total: 0 } }, dia: {} };
+  for (const v of Object.values(S.ventas)) (v.estado === 'activa' ? R.activas : R.anuladas).push(v);
+  const porNum = (a, b) => (Number(a.num) || 0) - (Number(b.num) || 0);
+  R.activas.sort(porNum); R.anuladas.sort(porNum);
+  for (const v of R.activas) {
+    const ids = asientosDe(v), n = ids.length, pend = !!(v.pago && v.pago.estado === 'pendiente'), tot = Number(v.total) || 0;
+    R.entradas += n; R.total += tot; if (pend) { R.porCobrar += tot; R.ventasPend++; } else R.cobrado += tot;
+    if (v.entrega && v.entrega.hecha) R.entOk++; else R.entPend++;
+    for (const id of ids) { const z = R.zona[ASIENTOS[id].sector], pr = precioDe(v, id); z.entradas++; z.total += pr; z[pend ? 'porCobrar' : 'cobrado'] += pr; }
+    const km = (v.pago && v.pago.medio) || 'Sin registrar', m = R.medio[km] || (R.medio[km] = { ventas: 0, entradas: 0, cobrado: 0, porCobrar: 0 });
+    m.ventas++; m.entradas += n; m[pend ? 'porCobrar' : 'cobrado'] += tot;
+    const c = R.canal[v.canal === 'fisica' ? 'fisica' : 'virtual']; c.ventas++; c.entradas += n; c.total += tot;
+    if (!pend) { const f = v.pago && v.pago.fecha, k = f ? fechaCorta(f) : 'Sin fecha', d = R.dia[k] || (R.dia[k] = { ventas: 0, monto: 0, ts: f || 9e15 }); d.ventas++; d.monto += tot; if (f && f < d.ts) d.ts = f; }
+  }
+  return R;
+}
+const estadoVenta = v => v.estado !== 'activa' ? 'ANULADA' : (v.pago && v.pago.estado === 'pendiente') ? 'PAGO PENDIENTE' : 'PAGADA';
+function cabeceraInforme(w, titulo) {
+  const ahora = new Date();
+  w.add(w.par(w.run(titulo, { b: 1, sz: 44, color: w.C.ink }), { despues: 40 }));
+  w.add(w.par(w.run(EVENTO.nombre + ': ' + EVENTO.subtitulo, { b: 1, sz: 28, color: 'C2187A' }), { despues: 40 }));
+  w.add(w.par(w.run(EVENTO.lugar + '  ·  ' + EVENTO.fecha, { sz: 22, color: w.C.gris }), { despues: 60 }));
+  w.add(w.par([w.run('Documento generado el ', { sz: 21, color: w.C.gris }), w.run(ahora.toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + ', ' + ahora.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }), { b: 1, sz: 21 }), w.run(' por ' + U.nombre, { sz: 21, color: w.C.gris })], { borde: w.C.ink, despues: 200 }));
+}
+const nombreArchivo = base => { const d = new Date(); return base + '-' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '.docx'; };
+
+async function docSituacion() {
+  const st = estadisticas(), R = resumenVentas(), t = st.tot, w = Word(EVENTO.nombre + ': ' + EVENTO.subtitulo + '  ·  Situación actual');
+  const potencial = LISTA.reduce((s, a) => s + a.precio, 0), ocupadas = t.vendidas + t.reservadas;
+  cabeceraInforme(w, 'SITUACIÓN ACTUAL');
+  w.indicadores([
+    [{ t: 'MONTO RECAUDADO', v: sol(R.cobrado), s: Math.round(R.cobrado / potencial * 100) + ' % del valor total de lista (' + sol(potencial) + ')' },
+     { t: 'VENTAS REGISTRADAS', v: String(R.activas.length), s: R.anuladas.length ? plural(R.anuladas.length, 'anulada no incluida', 'anuladas no incluidas') : 'Sin ventas anuladas' },
+     { t: 'ENTRADAS VENDIDAS', v: String(t.vendidas), s: t.reservadas ? plural(t.reservadas, 'entrada con pago pendiente', 'entradas con pago pendiente') : 'Todas con pago recibido' }],
+    [{ t: 'POR COBRAR', v: sol(R.porCobrar), s: plural(R.ventasPend, 'venta con pago pendiente', 'ventas con pago pendiente') },
+     { t: 'BUTACAS DISPONIBLES', v: String(t.libres), s: 'de ' + TOTAL + ' butacas del teatro' },
+     { t: 'BUTACAS BLOQUEADAS', v: String(t.cupoLibre), s: 'sin vender, para venta física' }]
+  ]);
+  w.texto('Del total de ' + TOTAL + ' butacas, ' + ocupadas + ' están ocupadas (' + Math.round(ocupadas / TOTAL * 100) + ' %), entre vendidas y con pago pendiente.', { despues: 60 });
+  w.h1('Situación por zona');
+  const filaZ = (n, o, pre) => [n, pre, o.total, o.vendidas, o.reservadas, o.cupoLibre, o.libres, sol(o.cobrado)];
+  w.datos(['Zona', 'Precio', 'Butacas', 'Vendidas', 'Pago pend.', 'Bloqueadas', 'Disponibles', 'Recaudado'],
+    [...['A', 'B', 'C'].map(k => filaZ(SECTORES[k].nombre, st.sec[k], sol(SECTORES[k].precio))), filaZ('Total', t, '')],
+    [1700, 900, 1000, 1050, 1150, 1250, 1300, 1288], { der: [1, 2, 3, 4, 5, 6, 7], total: true });
+  w.h1('Recaudación por medio de pago');
+  const medios = Object.keys(R.medio).sort((a, b) => R.medio[b].cobrado - R.medio[a].cobrado);
+  if (medios.length) w.datos(['Medio de pago', 'Ventas', 'Entradas', 'Cobrado', 'Por cobrar'], medios.map(k => [k, R.medio[k].ventas, R.medio[k].entradas, sol(R.medio[k].cobrado), sol(R.medio[k].porCobrar)]), [2938, 1300, 1400, 2000, 2000], { der: [1, 2, 3, 4] });
+  else w.texto('Aún no hay ventas registradas.', { color: w.C.gris });
+  w.h1('Canal y entrega');
+  w.datos(['Canal', 'Ventas', 'Entradas', 'Monto'], [['Venta virtual', R.canal.virtual.ventas, R.canal.virtual.entradas, sol(R.canal.virtual.total)], ['Venta física', R.canal.fisica.ventas, R.canal.fisica.entradas, sol(R.canal.fisica.total)]], [3638, 2000, 2000, 2000], { der: [1, 2, 3] });
+  w.texto('Entrega de entradas: ' + plural(R.entOk, 'venta entregada', 'ventas entregadas') + ' y ' + plural(R.entPend, 'venta por entregar', 'ventas por entregar') + '.', { despues: 60 });
+  const img = await imagenTeatro();
+  w.add(w.par(w.run('Mapa de butacas', { }), { estilo: 'Heading1', salto: true }));
+  w.texto('Estado de las ' + TOTAL + ' butacas al ' + fechaLarga(Date.now()), { color: w.C.gris, despues: 100 });
+  w.imagen(img.bytes, img.w, img.h, 16.5, 21.5, 'Mapa de butacas del teatro con su estado actual');
+  return { blob: w.construir('Situación actual: ' + EVENTO.nombre + ' ' + EVENTO.subtitulo, U.nombre), nombre: nombreArchivo('situacion-actual-saqra') };
+}
+
+function cartilla(w, v) {
+  const an = [1700, 3119, 1700, 3119], ids = asientosDe(v), p = v.pago || {}, en = v.entrega || {}, c = v.comprador || {}, anul = v.estado !== 'activa';
+  const est = estadoVenta(v), fondoCab = anul ? '857F9B' : est === 'PAGO PENDIENTE' ? 'A06A00' : w.C.ink;
+  const filas = [
+    ['Comprador', c.nombre || '—', 'Documento (DNI)', c.doc || '—'],
+    ['Teléfono', c.tel || '—', 'Registrada', fechaLarga(v.creado) || '—'],
+    ['Entradas', String(ids.length), 'Total', sol(v.total)],
+    ['Butacas', resumenAsientos(ids), null, null],
+    ['Medio de pago', p.medio || '—', 'Estado del pago', p.estado === 'pendiente' ? 'Pendiente' : 'Pagado' + (p.fecha ? ' el ' + fechaLarga(p.fecha) : '')],
+    ['Canal', (v.canal === 'fisica' ? 'Venta física' : 'Venta virtual') + (v.bloqueo ? ' (bloqueo: ' + v.bloqueo + ')' : ''), 'Modalidad de entrega', en.modalidad || '—'],
+    ['Responsable de entrega', en.responsable || 'Sin asignar', 'Entrega', en.hecha ? 'Realizada' + (en.fecha ? ' el ' + fechaLarga(en.fecha) : '') : 'Pendiente'],
+    ['Vendedor', v.vendedor || '—', 'Registrada por', (v.registradoPor && v.registradoPor.nombre) || '—']
+  ];
+  if (v.obs) filas.push(['Observaciones', v.obs, null, null]);
+  if (anul && v.anulacion) filas.push(['Anulación', fechaLarga(v.anulacion.ts) + ', por ' + v.anulacion.por + '. Motivo: ' + v.anulacion.motivo, null, null]);
+  const tx = (t, ancho, o = {}) => w.celda(w.par(w.run(t, { sz: 19, b: o.b, color: o.color }), { despues: 0, keep: o.keep, jc: o.jc }), ancho, { span: o.span, fondo: o.fondo });
+  const cab = w.fila([w.celda(w.par([w.run(v.codigo, { b: 1, sz: 26, color: 'FFFFFF' }), w.run('     ' + est, { b: 1, sz: 20, color: 'FFFFFF' })], { despues: 0, keep: true }), 9638, { span: 4, fondo: fondoCab })]);
+  const cuerpo = filas.map((f, i) => {
+    const keep = i < filas.length - 1;
+    return w.fila(f[2] == null
+      ? [tx(f[0], an[0], { b: 1, color: w.C.gris, fondo: w.C.claro, keep }), tx(f[1], an[1] + an[2] + an[3], { span: 3, keep })]
+      : [tx(f[0], an[0], { b: 1, color: w.C.gris, fondo: w.C.claro, keep }), tx(f[1], an[1], { keep }), tx(f[2], an[2], { b: 1, color: w.C.gris, fondo: w.C.claro, keep }), tx(f[3], an[3], { keep })]);
+  });
+  w.add(w.tabla(an, [cab, ...cuerpo]));
+  w.add(w.par('', { despues: 160 }));
+}
+
+function docVentas() {
+  const R = resumenVentas(), w = Word(EVENTO.nombre + ': ' + EVENTO.subtitulo + '  ·  Resumen de ventas'), potencial = LISTA.reduce((s, a) => s + a.precio, 0);
+  cabeceraInforme(w, 'RESUMEN DE VENTAS');
+  w.h1('1. Resumen general');
+  w.indicadores([
+    [{ t: 'VENTAS REGISTRADAS', v: String(R.activas.length), s: R.anuladas.length ? plural(R.anuladas.length, 'anulada no incluida', 'anuladas no incluidas') : 'Sin ventas anuladas' },
+     { t: 'ENTRADAS VENDIDAS', v: String(R.entradas), s: 'de ' + TOTAL + ' butacas' },
+     { t: 'MONTO TOTAL DE VENTAS', v: sol(R.total), s: 'Valor de lista: ' + sol(potencial) }],
+    [{ t: 'COBRADO', v: sol(R.cobrado), s: 'Pagos recibidos' },
+     { t: 'POR COBRAR', v: sol(R.porCobrar), s: plural(R.ventasPend, 'venta con pago pendiente', 'ventas con pago pendiente') },
+     { t: 'ENTREGAS', v: R.entOk + ' de ' + R.activas.length, s: 'ventas con entradas entregadas' }]
+  ]);
+  if (!R.activas.length) w.texto('Aún no hay ventas registradas.', { color: w.C.gris });
+  else {
+    w.h2('Por zona');
+    w.datos(['Zona', 'Precio', 'Entradas', 'Monto', 'Cobrado', 'Por cobrar'],
+      [...['A', 'B', 'C'].map(k => [SECTORES[k].nombre, sol(SECTORES[k].precio), R.zona[k].entradas, sol(R.zona[k].total), sol(R.zona[k].cobrado), sol(R.zona[k].porCobrar)]),
+       ['Total', '', R.entradas, sol(R.total), sol(R.cobrado), sol(R.porCobrar)]], [2138, 1100, 1300, 1700, 1700, 1700], { der: [1, 2, 3, 4, 5], total: true });
+    w.h2('Por medio de pago');
+    const medios = Object.keys(R.medio).sort((a, b) => R.medio[b].cobrado - R.medio[a].cobrado);
+    w.datos(['Medio de pago', 'Ventas', 'Entradas', 'Cobrado', 'Por cobrar'], medios.map(k => [k, R.medio[k].ventas, R.medio[k].entradas, sol(R.medio[k].cobrado), sol(R.medio[k].porCobrar)]), [2938, 1300, 1400, 2000, 2000], { der: [1, 2, 3, 4] });
+    w.h2('Por canal');
+    w.datos(['Canal', 'Ventas', 'Entradas', 'Monto'], [['Venta virtual', R.canal.virtual.ventas, R.canal.virtual.entradas, sol(R.canal.virtual.total)], ['Venta física', R.canal.fisica.ventas, R.canal.fisica.entradas, sol(R.canal.fisica.total)]], [3638, 2000, 2000, 2000], { der: [1, 2, 3] });
+    const dias = Object.keys(R.dia).sort((a, b) => R.dia[a].ts - R.dia[b].ts);
+    if (dias.length) { w.h2('Cobrado por día'); w.datos(['Fecha de pago', 'Ventas', 'Monto'], dias.map(k => [k, R.dia[k].ventas, sol(R.dia[k].monto)]), [4638, 2500, 2500], { der: [1, 2] }); }
+    w.h1('2. Relación de ventas');
+    w.datos(['N.º', 'Registro', 'Comprador', 'Zona y butacas', 'Entr.', 'Total', 'Medio', 'Pago'],
+      [...R.activas.map(v => [v.codigo, fechaCorta(v.creado), (v.comprador || {}).nombre || '', resumenAsientos(asientosDe(v)).split('; '), asientosDe(v).length, sol(v.total), (v.pago || {}).medio || '', (v.pago || {}).estado === 'pendiente' ? 'Pendiente' : 'Pagado']),
+       ['Total', '', '', '', R.entradas, sol(R.total), '', '']],
+      [800, 1150, 1500, 2250, 620, 900, 1350, 1068], { der: [4, 5], total: true });
+    w.add(w.par(w.run('3. Cartillas de ventas'), { estilo: 'Heading1', salto: true }));
+    w.texto('Una cartilla por venta, en orden de número.', { color: w.C.gris, despues: 120 });
+    for (const v of R.activas) cartilla(w, v);
+  }
+  if (R.anuladas.length) {
+    w.add(w.par(w.run('4. Ventas anuladas'), { estilo: 'Heading1', salto: R.activas.length > 0 }));
+    w.texto('No se incluyen en los totales. Las butacas quedaron liberadas.', { color: w.C.gris, despues: 120 });
+    for (const v of R.anuladas) cartilla(w, v);
+  }
+  return { blob: w.construir('Resumen de ventas: ' + EVENTO.nombre + ' ' + EVENTO.subtitulo, U.nombre), nombre: nombreArchivo('resumen-de-ventas-saqra') };
+}
+async function crearInforme(b, cual) {
+  const txt = b.textContent; b.disabled = true; b.textContent = 'Generando…';
+  try {
+    const r = cual === 'situacion' ? await docSituacion() : docVentas();
+    abrir({ tipo: 'archivo', titulo: cual === 'situacion' ? 'Situación actual' : 'Resumen de ventas', url: URL.createObjectURL(r.blob), blob: r.blob, nombre: r.nombre });
+  } catch (e) { toast('No se pudo generar el documento: ' + (e.message || e), 'error'); }
+  finally { if (b.isConnected) { b.disabled = false; b.textContent = txt; } }
+}
+function hojaArchivo(m) {
+  let compartir = false;
+  try { compartir = !!(navigator.canShare && navigator.share && navigator.canShare({ files: [new File([m.blob], m.nombre, { type: m.blob.type })] })); } catch (e) { compartir = false; }
+  return `<header class="hoja-cab"><h2>${esc(m.titulo)}</h2><button type="button" class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
+    <div class="hoja-cuerpo"><p class="res-but"><b>${esc(m.nombre)}</b>Documento de Word, ${Math.max(1, Math.round(m.blob.size / 1024))} KB</p>
+      <p class="nota">Descárgalo y ábrelo con Word, Google Docs o Pages.${compartir ? ' También puedes compartirlo directo por WhatsApp o correo.' : ''} El documento refleja los datos de este momento.</p></div>
+    <footer class="hoja-pie"><button type="button" class="btn" data-a="cerrar">Cerrar</button><button type="button" class="btn ${compartir ? '' : 'pri'}" data-a="descargarArchivo">Descargar</button>${compartir ? '<button type="button" class="btn pri" data-a="compartirArchivo">Compartir</button>' : ''}</footer>`;
 }
 
 function abrir(modal) { UI.modal = modal; pintarModal(); }
@@ -1071,6 +1493,7 @@ function pintarModal() {
   else if (m.tipo === 'bloquear') h = hojaBloquear(m);
   else if (m.tipo === 'texto') h = hojaTexto(m);
   else if (m.tipo === 'imagen') h = hojaImagen(m);
+  else if (m.tipo === 'archivo') h = hojaArchivo(m);
   const cuerpo = $('#modal .hoja-cuerpo'), y = cuerpo ? cuerpo.scrollTop : 0;
   $('#modal').innerHTML = `<div class="velo" data-velo><div class="hoja" role="dialog" aria-modal="true">${h}</div></div>`;
   if (m.tipo === 'detalle' && y) $('#modal .hoja-cuerpo').scrollTop = y;
@@ -1089,6 +1512,8 @@ function hojaVenta(v, m) {
     <div class="hoja-cuerpo">
       <p class="res-but"><b>${entradas(ids.length)}</b>${esc(resumenAsientos(ids))}</p>
       <p class="total">Total <output></output></p>
+      <label class="campo">N.º de venta<input type="number" name="num" min="1" step="1" inputmode="numeric" value="${ed ? esc(v.num) : sugeridoNum()}" ${ed ? '' : 'data-sug="' + sugeridoNum() + '"'}></label>
+      <p class="nota">${ed ? 'Puedes corregirlo; no se puede repetir.' : 'Se asigna solo. Cámbialo si estás anotando una venta ya realizada; no se puede repetir.'}</p>
       <fieldset><legend>Canal</legend>
         <div class="ops">${Object.entries(CANALES).map(([k, n]) => opcion('canal', k, n, canal === k)).join('')}</div>
         ${!ed && m.deCupo ? '<p class="nota">Son butacas bloqueadas' + (m.bloqueo ? ' (' + esc(m.bloqueo) + ')' : '') + ', por eso se propone venta física.</p>' : ''}
@@ -1127,11 +1552,13 @@ function actualizarFormVenta(f) {
 }
 function leerFormVenta(f) {
   const e = f.elements, err = $('.err', f);
-  const d = { nombre: e.nombre.value.trim(), doc: e.doc.value.trim(), tel: e.tel.value.trim(),
+  const numTxt = String(e.num.value).trim(), num = Number(numTxt);
+  const d = { num, numAuto: !!e.num.dataset.sug && numTxt === e.num.dataset.sug, nombre: e.nombre.value.trim(), doc: e.doc.value.trim(), tel: e.tel.value.trim(),
     pagoEstado: e.pagoEstado.value, medio: e.medio.value, modalidad: e.modalidad.value, responsable: e.responsable.value.trim(), entregada: e.entregada.checked, canal: e.canal.value,
     vendedor: e.vendedor.value.trim(), obs: e.obs.value.trim() };
   let msg = '';
-  if (!d.nombre) msg = 'Falta el nombre del comprador.';
+  if (!Number.isInteger(num) || num < 1 || num > 99999) msg = 'Escribe un N.º de venta válido (número entero mayor que 0).';
+  else if (!d.nombre) msg = 'Falta el nombre del comprador.';
   else if (!d.vendedor) msg = 'Falta indicar quién hizo la venta.';
   err.hidden = !msg; err.textContent = msg;
   if (msg) { err.scrollIntoView({ block: 'center' }); return null; }
@@ -1164,6 +1591,7 @@ function hojaDetalle(id) {
       ${p.estado === 'pendiente' ? `<button type="button" class="btn pri" data-a="marcarPagada" data-v="${esc(id)}">Marcar como pagada</button>` : ''}
       <button type="button" class="btn" data-a="editar" data-v="${esc(id)}">Editar datos</button>
       <button type="button" class="btn" data-a="reubicar" data-v="${esc(id)}">Cambiar butacas</button>
+      ${act ? `<button type="button" class="btn pri" data-a="imagenCliente" data-v="${esc(id)}">Imagen de butacas para el cliente</button>` : ''}
       <button type="button" class="btn" data-a="copiarResumen" data-v="${esc(id)}">Copiar resumen</button>
       <button type="button" class="btn pel" data-a="anular" data-v="${esc(id)}">Anular venta</button>
     </div>` : ''}
@@ -1269,7 +1697,7 @@ const A = {
   tab(b) { UI.tab = b.dataset.v; pintar(); window.scrollTo(0, 0); },
   zoom() { UI.zoom = UI.zoom === 'cerca' ? 'todo' : 'cerca'; ajustarZoom(); },
   ir(b) { const el = $('#sec-' + b.dataset.v); if (el) el.scrollIntoView({ block: 'start' }); },
-  cerrar() { cerrar(); },
+  cerrar() { const m = UI.modal; cerrar(); if (m && m.volverA && S.ventas[m.volverA]) abrir({ tipo: 'detalle', id: m.volverA }); },
   filtro(b) { UI.filtro = b.dataset.v; pintarVentas(); },
   detalle(b) { abrir({ tipo: 'detalle', id: b.dataset.v }); },
   volverDetalle() { abrir({ tipo: 'detalle', id: UI.modal.id }); },
@@ -1284,18 +1712,37 @@ const A = {
     b.disabled = true;
     try {
       const r = await generarCaptura(sector, modo);
-      abrir({ tipo: 'imagen', titulo: (modo === 'venta' ? 'Para vender: ' : 'Ocupación: ') + SECTORES[sector].nombre, url: r.url, blob: r.blob, nombre: r.nombre });
+      abrir({ tipo: 'imagen', titulo: (modo === 'venta' ? 'Para ventas: ' : 'Diagnóstico: ') + SECTORES[sector].nombre, url: r.url, blob: r.blob, nombre: r.nombre });
     } catch (e) { toast('No se pudo crear la imagen: ' + (e.message || e), 'error'); }
     finally { b.disabled = false; }
   },
-  descargarImagen() {
+  async capturaGeneral(b) {
+    b.disabled = true;
+    try {
+      const r = await imagenTeatro({ encabezado: true, numeros: true }), d = new Date();
+      abrir({ tipo: 'imagen', titulo: 'Captura general', url: URL.createObjectURL(r.blob), blob: r.blob, nombre: 'teatro-completo-' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + '.png' });
+    } catch (e) { toast('No se pudo crear la imagen: ' + (e.message || e), 'error'); }
+    finally { if (b.isConnected) b.disabled = false; }
+  },
+  async imagenCliente(b) {
+    const v = S.ventas[b.dataset.v]; if (!v) return;
+    b.disabled = true;
+    try {
+      const r = await generarCapturaCliente(v);
+      abrir({ tipo: 'imagen', titulo: 'Butacas de ' + (((v.comprador || {}).nombre) || v.codigo), url: r.url, blob: r.blob, nombre: r.nombre, volverA: b.dataset.v });
+    } catch (e) { toast('No se pudo crear la imagen: ' + (e.message || e), 'error'); }
+    finally { if (b.isConnected) b.disabled = false; }
+  },
+  async docSituacion(b) { await crearInforme(b, 'situacion'); },
+  async docVentas(b) { await crearInforme(b, 'ventas'); },
+  descargarArchivo() {
     const m = UI.modal; if (!m || !m.url) return;
     const a = document.createElement('a'); a.href = m.url; a.download = m.nombre; document.body.appendChild(a); a.click(); a.remove();
     toast('Descargando ' + m.nombre);
   },
-  async compartirImagen() {
+  async compartirArchivo() {
     const m = UI.modal; if (!m || !m.blob) return;
-    try { await navigator.share({ files: [new File([m.blob], m.nombre, { type: 'image/png' })], title: m.titulo }); }
+    try { await navigator.share({ files: [new File([m.blob], m.nombre, { type: m.blob.type || 'image/png' })], title: m.titulo }); }
     catch (e) { if (!e || e.name !== 'AbortError') toast('No se pudo compartir. Usa Descargar o mantén presionada la imagen.', 'error'); }
   },
   enviar(b) { const f = b.closest('form'); if (f && F[f.dataset.f]) F[f.dataset.f](f); },
@@ -1363,8 +1810,7 @@ const A = {
     descargar('historial-saqra.csv', csv([['Fecha', 'Responsable', 'Acción', 'Venta', 'Detalle'], ...filas]));
   },
   cambiarUsuario() { abrir({ tipo: 'usuario' }); },
-  reiniciarDemo() { confirmar('Reiniciar datos de prueba', 'Se borran las ventas y bloqueos de esta sesión de prueba y se vuelve a cargar la venta inicial del Excel.', 'Reiniciar', async () => { limpiarSel(); UI.reubicar = null; almacen.reiniciar(); await sembrarDemo(); }); },
-  salir() { if (cerrarSesion) cerrarSesion(); }
+  salir() { confirmar('Salir de este dispositivo', 'Se olvidan tu nombre y el código del grupo en este teléfono. Para volver a entrar necesitarás el enlace privado del grupo.', 'Salir', () => { AJ.del('nombre'); AJ.del('codigo'); location.reload(); }); }
 };
 const F = {
   async bloquear(f) {
@@ -1389,7 +1835,7 @@ const F = {
     n.pago = Object.assign({}, v.pago, { medio: d.medio, estado: d.pagoEstado });
     n.entrega = Object.assign({}, v.entrega, { modalidad: d.modalidad, responsable: d.responsable, hecha: d.entregada });
     n.canal = d.canal;
-    n.vendedor = d.vendedor; n.obs = d.obs;
+    n.vendedor = d.vendedor; n.obs = d.obs; n.num = d.num;
     const r = await intentar(() => guardarVenta(id, n), '', $('.btn.pri', f));
     if (r === false) return;
     toast(r === 'ok' ? 'Cambios guardados.' : 'No había cambios que guardar.', r === 'ok' ? 'ok' : '');
@@ -1403,9 +1849,10 @@ const F = {
   },
   usuario(f) {
     const n = f.elements.nombre.value.trim(); if (!n) return;
-    U = { uid: 'demo-' + n.toLowerCase().replace(/\s+/g, '-'), nombre: n };
+    U.nombre = n; AJ.set('nombre', n);
+    intentar(() => almacen.actualizar({ ['usuarios/' + U.uid]: { nombre: n, ult: Date.now() } }));
     limpiarSel(); cerrar(); pintar();
-  }
+  },
 };
 // Si otra persona toma una butaca que yo tenía elegida, sale de mi selección.
 function depurarSeleccion() {
@@ -1425,7 +1872,7 @@ function depurarSeleccion() {
 }
 
 document.addEventListener('click', e => {
-  if (e.target.matches('[data-velo]')) { const m = UI.modal; if (m && (m.tipo === 'detalle' || m.tipo === 'confirmar' || m.tipo === 'imagen')) cerrar(); return; }
+  if (e.target.matches('[data-velo]')) { const m = UI.modal; if (m && (m.tipo === 'detalle' || m.tipo === 'confirmar' || m.tipo === 'imagen' || m.tipo === 'archivo')) cerrar(); return; }
   const b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
   const fn = A[b.dataset.a]; if (fn) fn(b, e);
 });
@@ -1436,7 +1883,7 @@ document.addEventListener('input', e => {
   if (t.form && (t.form.dataset.f === 'venta' || t.form.dataset.f === 'editar')) actualizarFormVenta(t.form);
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && UI.modal && (UI.modal.tipo === 'detalle' || UI.modal.tipo === 'confirmar' || UI.modal.tipo === 'imagen')) cerrar();
+  if (e.key === 'Escape' && UI.modal && (UI.modal.tipo === 'detalle' || UI.modal.tipo === 'confirmar' || UI.modal.tipo === 'imagen' || UI.modal.tipo === 'archivo')) cerrar();
   if (e.key === 'Enter' && e.target.matches && e.target.matches('#modal form input:not([type=checkbox]):not([type=radio])')) {
     e.preventDefault(); const f = e.target.form; if (f && F[f.dataset.f]) F[f.dataset.f](f);
   }
@@ -1447,7 +1894,6 @@ document.addEventListener('keydown', e => {
    ===================================================================== */
 function alCambiarDatos(d) {
   S = d;
-  if (U && S.usuarios[U.uid]) U.nombre = S.usuarios[U.uid].nombre || U.nombre;
   if (U && $('#mapa')) { depurarSeleccion(); programar(); }
 }
 function puerta(html, alEnviar) {
@@ -1464,68 +1910,82 @@ function puerta(html, alEnviar) {
   b.addEventListener('click', enviar);
   f.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); enviar(); } });
 }
-// Venta que ya figuraba en el Excel de control (solo se carga en el modo demo).
-async function sembrarDemo() {
-  const yo = U; U = { uid: 'excel', nombre: 'Excel de control' };
-  try {
-    await crearVenta({ asientos: [7, 8, 9, 10, 11, 12, 13, 14, 15].map(n => 'A-G-' + n), nombre: 'Venta previa (Excel de control)',
-      pagoEstado: 'pagado', pagoFecha: null, medio: 'Sin registrar', modalidad: 'Sin registrar', entregada: false, vendedor: 'Sin registrar',
-      obs: 'Venta importada del Excel de control.' });
-  } finally { U = yo; }
-}
-async function iniciarDemo() {
-  almacen = almacenLocal(alCambiarDatos);
-  puerta(`<p class="aviso" style="margin:14px 0 0">Modo demo: sirve para probar el app. Los datos no se guardan ni se comparten.</p>
-    <label class="campo">Tu nombre<input type="text" name="nombre" required autocomplete="off" autocapitalize="words" enterkeyhint="go"></label>
-    <button class="btn pri">Entrar</button>`, async f => {
-    const n = f.elements.nombre.value.trim(); if (!n) throw new Error('Escribe tu nombre: es el que queda como responsable de cada venta.');
-    U = { uid: 'demo-' + n.toLowerCase().replace(/\s+/g, '-'), nombre: n };
-    await sembrarDemo();
-    montar();
-  });
-}
 function cargarScript(src) {
   return new Promise((ok, mal) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => mal(new Error('No se pudo cargar ' + src)); document.head.appendChild(s); });
 }
-async function iniciarFirebase() {
+// Ajustes de este dispositivo (nombre, código del grupo, identificador). Si el navegador no deja guardar, quedan en memoria.
+const AJ = (() => {
+  const mem = {};
+  return {
+    get(k) { try { return localStorage.getItem('saqra_' + k); } catch (e) { return mem[k] || null; } },
+    set(k, v) { try { localStorage.setItem('saqra_' + k, v); } catch (e) { mem[k] = v; } },
+    del(k) { try { localStorage.removeItem('saqra_' + k); } catch (e) { delete mem[k]; } }
+  };
+})();
+const codigoValido = c => /^[A-Za-z0-9_-]{12,64}$/.test(c || '');
+function idDispositivo() {
+  let d = AJ.get('dev');
+  if (!d) { d = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10); AJ.set('dev', d); }
+  return d;
+}
+// El código del grupo llega en el enlace privado (#k=CÓDIGO). Se guarda en este dispositivo y se borra de la barra de direcciones.
+function leerCodigoDelEnlace() {
+  const m = /[#?&]k=([^&#]+)/.exec(location.search + location.hash);
+  if (!m) return null;
+  let c = m[1]; try { c = decodeURIComponent(c); } catch (e) { /* se usa tal cual */ }
+  try { history.replaceState(null, '', location.pathname); } catch (e) { /* no pasa nada */ }
+  return c.trim();
+}
+function pantallaMensaje(titulo, texto) {
+  $('#app').innerHTML = `<div class="puerta"><form><h1>${esc(titulo)}</h1><p>${esc(texto)}</p></form></div>`;
+}
+function pedir(html, procesar) {
+  return new Promise(ok => puerta(html, async f => { ok(await procesar(f)); }));
+}
+async function iniciar() {
+  if (/PEGA_AQUI/.test(JSON.stringify(FIREBASE_CONFIG))) {
+    pantallaMensaje('Falta conectar Firebase', 'Abre index.html y reemplaza cada PEGA_AQUI por los valores de tu proyecto de Firebase (bloque FIREBASE_CONFIG, al inicio del script).');
+    return;
+  }
+  let aviso = '';
+  const enlace = leerCodigoDelEnlace();
+  if (enlace) { if (codigoValido(enlace)) AJ.set('codigo', enlace); else aviso = 'El código del enlace no es válido. Pide de nuevo el enlace del grupo.'; }
   const base = 'https://www.gstatic.com/firebasejs/' + FIREBASE_SDK + '/';
   await cargarScript(base + 'firebase-app-compat.js');
-  await Promise.all([cargarScript(base + 'firebase-auth-compat.js'), cargarScript(base + 'firebase-database-compat.js')]);
+  await cargarScript(base + 'firebase-database-compat.js');
   firebase.initializeApp(FIREBASE_CONFIG);
-  const auth = firebase.auth(), fdb = firebase.database();
-  cerrarSesion = () => auth.signOut().then(() => location.reload());
-  auth.onAuthStateChanged(async user => {
-    if (!user) {
-      U = null;
-      puerta(`<label class="campo">Correo<input type="email" name="correo" required autocomplete="username"></label>
-        <label class="campo">Contraseña<input type="password" name="clave" required autocomplete="current-password"></label>
-        <button class="btn pri">Entrar</button>`, async f => {
-        try { await auth.signInWithEmailAndPassword(f.elements.correo.value.trim(), f.elements.clave.value); }
-        catch (e) { throw new Error('No se pudo entrar. Revisa el correo y la contraseña.'); }
+  const fdb = firebase.database();
+  // 1. Código del grupo: se comprueba contra la base de datos antes de entrar.
+  let codigo = AJ.get('codigo');
+  for (;;) {
+    if (!codigoValido(codigo)) {
+      codigo = await pedir(`<p>Para entrar necesitas el código del grupo. Lo más fácil es abrir el enlace privado que se compartió en el grupo; si no, pégalo aquí.</p>${aviso ? '<p class="aviso" style="margin:12px 0 0">' + esc(aviso) + '</p>' : ''}
+        <label class="campo">Código del grupo<input type="text" name="codigo" required autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+        <button class="btn pri">Continuar</button>`, f => {
+        const v = f.elements.codigo.value.trim();
+        if (!codigoValido(v)) throw new Error('Ese código no es válido. Cópialo tal como se envió en el grupo.');
+        AJ.set('codigo', v); return v;
       });
-      return;
+      aviso = '';
     }
-    try {
-      let perfil = (await fdb.ref('usuarios/' + user.uid).get()).val();
-      if (!perfil) {
-        puerta(`<label class="campo">Tu nombre (aparece como responsable de tus ventas)<input type="text" name="nombre" required autocomplete="name"></label><button class="btn pri">Continuar</button>`, async f => {
-          const n = f.elements.nombre.value.trim(); if (!n) throw new Error('Escribe tu nombre.');
-          await fdb.ref('usuarios/' + user.uid).set({ nombre: n, correo: user.email || '', activo: true });
-          location.reload();
-        });
-        return;
-      }
-      if (perfil.activo === false) {
-        puerta(`<p class="err">Esta cuenta está desactivada. Pide que la reactiven.</p><button class="btn">Cerrar sesión</button>`, async () => cerrarSesion());
-        return;
-      }
-      U = { uid: user.uid, nombre: perfil.nombre };
-      almacen = almacenFirebase(fdb, alCambiarDatos);
-      montar();
-    } catch (e) {
-      puerta(`<p class="err">No se pudo leer la base de datos: ${esc(e.message)}</p><button class="btn">Cerrar sesión</button>`, async () => cerrarSesion());
+    try { await fdb.ref('g_' + codigo + '/usuarios').get(); break; }
+    catch (e) {
+      if (/permission|denied/i.test(String((e && (e.code || e.message)) || ''))) { AJ.del('codigo'); codigo = null; aviso = 'Ese código no da acceso. Revisa que sea el del enlace del grupo.'; continue; }
+      await pedir(`<p class="err">No se pudo conectar con la base de datos: ${esc((e && e.message) || e)}</p><button class="btn pri">Reintentar</button>`, () => true);
     }
+  }
+  // 2. Nombre de la persona (queda como responsable de lo que registre)
+  let nombre = AJ.get('nombre');
+  if (!nombre) nombre = await pedir(`<p>Escribe tu nombre: es el que queda como responsable de cada venta o cambio que registres.</p>
+    <label class="campo">Tu nombre<input type="text" name="nombre" required autocomplete="off" autocapitalize="words" enterkeyhint="go"></label>
+    <button class="btn pri">Entrar</button>`, f => {
+    const n = f.elements.nombre.value.trim(); if (!n) throw new Error('Escribe tu nombre.');
+    AJ.set('nombre', n); return n;
   });
+  U = { uid: idDispositivo(), nombre };
+  almacen = almacenFirebase(fdb, 'g_' + codigo, alCambiarDatos);
+  almacen.actualizar({ ['usuarios/' + U.uid]: { nombre, ult: Date.now() } }).catch(() => {});
+  montar();
 }
 // La tipografía se pide después de mostrar la página: si no hay red, el app abre igual.
 (function () {
@@ -1533,7 +1993,7 @@ async function iniciarFirebase() {
   l.href = 'https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap';
   document.head.appendChild(l);
 })();
-(FIREBASE_CONFIG ? iniciarFirebase() : iniciarDemo()).catch(e => {
+iniciar().catch(e => {
   $('#app').innerHTML = `<div class="puerta"><form><h1>No se pudo iniciar</h1><p>${esc(e.message)}</p></form></div>`;
 });
 </script>
