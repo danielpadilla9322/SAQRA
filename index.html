@@ -116,11 +116,10 @@ body.con-sel main{padding-bottom:calc(var(--nav) + 150px)}
 .b.sC{--c:var(--verde);--ct:var(--verde-t);--cd:var(--verde-d);--cb:#8DD0AC}
 .b.e-vendido{background:var(--tinta);border-color:var(--tinta);color:#fff}
 .b.e-reservado{background:var(--maiz);border-color:#C28F00;color:var(--tinta)}
-.b.e-cupo{background:repeating-linear-gradient(135deg,#fff 0 3px,#D5D1E2 3px 6px);border:1.5px dashed var(--tinta2);color:var(--tinta)}
+.b.e-cupo{background:repeating-linear-gradient(135deg,#fff 0 3px,#D5D1E2 3px 6px);border:1.5px solid var(--tinta2);color:var(--tinta)}
 .b.sel{background:var(--c);border:1.5px solid #fff;color:#fff;box-shadow:0 0 0 2.5px var(--tinta)}
 .b{position:relative}
 .grp{grid-row:1;align-self:stretch;justify-self:stretch;margin:-2px;border:2px solid var(--mc);border-radius:8px;pointer-events:none;z-index:1;box-sizing:border-box}
-.grp.bq{border-style:dashed}
 .mapa.mini .grp{margin:-1px;border-width:1px;border-radius:3px}
 .b.libera{outline:2px dashed #C2187A;outline-offset:1px;opacity:.6}
 .b.nueva::after,.b.libera::after{position:absolute;top:-6px;right:-6px;width:15px;height:15px;border-radius:50%;color:#fff;font:700 12px/15px var(--fc);text-align:center;pointer-events:none;z-index:3}
@@ -774,7 +773,7 @@ function montar() {
       <button type="button" data-a="tab" data-v="gestion">Gestión</button>
     </nav>
   </header>
-  <div class="ocu"><div class="ocu-in"><div class="ocu-bar" id="ocuBar"></div><ul class="ley" id="ley"></ul><p class="nota" style="margin:6px 0 0">Cada marco de color rodea un grupo: línea continua = una venta, punteada = un bloqueo.</p></div></div>
+  <div class="ocu"><div class="ocu-in"><div class="ocu-bar" id="ocuBar"></div><ul class="ley" id="ley"></ul><p class="nota" style="margin:6px 0 0">Cada marco de color rodea una venta, para distinguir ventas contiguas.</p></div></div>
   <main>
     <section id="t-mapa">
       <div class="mbarra">
@@ -895,7 +894,7 @@ function pintarOcupacion(st) {
   $('#ley').innerHTML = seg.map(([c, n, nom]) => `<li><span class="pt o-${c}"></span>${nom} <b>${n}</b></li>`).join('');
 }
 const PALETA_MARCOS = ['#F0782A', '#8B3FA0', '#1E9BD0', '#D61D96', '#3C5FD0', '#8DA82A'];
-function claveGrupo(id) { const r = S.asientos[id]; if (!r) return null; if (r.v) return 'v:' + r.v; if (r.p) return 'p:' + r.p; return null; }
+function claveGrupo(id) { const r = S.asientos[id]; return r && r.v ? 'v:' + r.v : null; }   // solo las ventas llevan marco; los bloqueos se distinguen por su relleno lineado
 function colorGrupo(k) {
   const v = k[0] === 'v' ? S.ventas[k.slice(2)] : null;
   let n = v && Number(v.num) ? Number(v.num) : 0;
@@ -910,7 +909,7 @@ function pintarMarcos() {
     let run = null;
     const cerrarRun = () => {
       if (!run) return;
-      const el = document.createElement('span'); el.className = 'grp' + (run.k[0] === 'p' ? ' bq' : '');
+      const el = document.createElement('span'); el.className = 'grp';
       el.style.gridColumn = run.c0 + ' / ' + (run.c1 + 1); el.style.setProperty('--mc', colorGrupo(run.k)); f.appendChild(el); run = null;
     };
     for (const b of f.querySelectorAll('.b')) {
@@ -1102,21 +1101,21 @@ function trazoButaca(g, x, y, w) {
   g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
 }
 function dibujarButaca(g, x, y, w, e, num, sc, modo, fuente, sinNum) {
-  let relleno, texto = null, borde = null, trama = false, dash = false;
+  let relleno, texto = null, borde = null, trama = false;
   if (modo === 'venta') {
     if (e === 'libre') { relleno = sc.c; texto = '#FFFFFF'; }
     else relleno = '#E6E3EE';
   } else if (e === 'libre') { relleno = sc.t; borde = sc.b; texto = sc.d; }
   else if (e === 'vendido') { relleno = '#241A3A'; texto = '#FFFFFF'; }
   else if (e === 'reservado') { relleno = '#F5B400'; borde = '#C28F00'; texto = '#241A3A'; }
-  else { relleno = '#FFFFFF'; borde = '#51476B'; texto = '#241A3A'; trama = true; dash = true; }
+  else { relleno = '#FFFFFF'; borde = '#51476B'; texto = '#241A3A'; trama = true; }
   trazoButaca(g, x, y, w); g.fillStyle = relleno; g.fill();
   if (trama) {
     g.save(); trazoButaca(g, x, y, w); g.clip(); g.strokeStyle = '#B4AECB'; g.lineWidth = 3;
     for (let k = -w; k < 2 * w; k += 10) { g.beginPath(); g.moveTo(x + k, y + w); g.lineTo(x + k + w, y); g.stroke(); }
     g.restore();
   }
-  if (borde) { trazoButaca(g, x, y, w); g.strokeStyle = borde; g.lineWidth = 2.5; g.setLineDash(dash ? [7, 5] : []); g.stroke(); g.setLineDash([]); }
+  if (borde) { trazoButaca(g, x, y, w); g.strokeStyle = borde; g.lineWidth = 2.5; g.stroke(); }
   if (texto && !sinNum) { g.fillStyle = texto; g.font = '700 ' + Math.round(w * 0.46) + 'px ' + fuente; g.textAlign = 'center'; g.fillText(String(num), x + w / 2, y + w / 2 + w * 0.16); }
 }
 async function generarCaptura(sector, modo) {
@@ -1201,17 +1200,17 @@ async function generarCaptura(sector, modo) {
   const ahora = new Date();
   g.textAlign = 'left'; g.fillStyle = '#857F9B'; g.font = '500 23px ' + FUENTE;
   g.fillText('Actualizado ' + ahora.toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) + '  ·  Generado por ' + U.nombre, PAD, H - 26);
-  if (ocup) g.fillText('Cada marco de color rodea un grupo: línea continua = una venta, punteada = un bloqueo.', PAD, H - 62);
+  if (ocup) g.fillText('Cada marco de color rodea una venta, para distinguir ventas contiguas.', PAD, H - 62);
   const blob = await new Promise((ok, mal) => cv.toBlob(b => b ? ok(b) : mal(new Error('el navegador no pudo crear la imagen')), 'image/png'));
   const hhmm = String(ahora.getHours()).padStart(2, '0') + String(ahora.getMinutes()).padStart(2, '0');
   return { blob, url: URL.createObjectURL(blob), nombre: sc.nombre.toLowerCase().replace(/\s+/g, '-') + (ocup ? '-diagnostico-' : '-ventas-') + hhmm + '.png' };
 }
-// Marcos de grupo en imágenes: una línea de color alrededor de cada tramo seguido de butacas de una misma venta (continua) o bloqueo (punteada)
+// Marcos de grupo en imágenes: una línea de color alrededor de cada tramo seguido de butacas de una misma venta
 function marcosCanvas(g, fila, y, cel, step, lw) {
   let run = null;
   const fin = () => {
     if (!run) return;
-    g.save(); g.strokeStyle = colorGrupo(run.k); g.lineWidth = lw; if (run.k[0] === 'p') g.setLineDash([lw * 2.4, lw * 1.5]);
+    g.save(); g.strokeStyle = colorGrupo(run.k); g.lineWidth = lw;
     const m = lw + 1.5; trazoRect(g, run.x0 - m, y - m, run.x1 - run.x0 + cel + 2 * m, cel + 2 * m, 9); g.stroke(); g.restore(); run = null;
   };
   for (const s of fila) { const k = claveGrupo(s.id); if (k && run && run.k === k && Math.abs(s.x - run.x1 - step) < 1) run.x1 = s.x; else { fin(); if (k) run = { k, x0: s.x, x1: s.x }; } }
@@ -1493,7 +1492,7 @@ async function imagenTeatro(op) {
   for (const [e, t] of [['vendido', 'Vendida'], ['reservado', 'Pago pendiente'], ['cupo', 'Bloqueada']]) {
     sw(e, SECTORES.A); g.fillStyle = '#241A3A'; g.fillText(t, lx, y + 23); lx += g.measureText(t).width + 34;
   }
-  g.fillStyle = '#51476B'; g.font = '500 22px ' + FUENTE; g.fillText('Marco de color = un grupo (venta o bloqueo)', lx + 6, y + 23);
+  g.fillStyle = '#51476B'; g.font = '500 22px ' + FUENTE; g.fillText('Marco de color = una venta', lx + 6, y + 23);
   const blob = await new Promise((ok, mal) => cv.toBlob(b => b ? ok(b) : mal(new Error('el navegador no pudo crear la imagen')), 'image/png'));
   if (op.encabezado) { g.textAlign = 'left'; g.fillStyle = '#857F9B'; g.font = '500 23px ' + FUENTE; g.fillText('Actualizado ' + new Date().toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) + '  ·  Generado por ' + U.nombre, PAD, H - 24); }
   const blob2 = op.encabezado ? await new Promise((ok, mal) => cv.toBlob(b => b ? ok(b) : mal(new Error('el navegador no pudo crear la imagen')), 'image/png')) : blob;
