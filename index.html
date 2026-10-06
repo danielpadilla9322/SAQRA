@@ -335,8 +335,8 @@ const EVENTO = {
   dia: '2026-11-13'   // fecha de la presentación, para la cuenta regresiva
 };
 const SECTORES = {
-  A: { nombre: 'Frente', precio: 90, c: '#D9381E', t: '#FBE0D9', b: '#EFA898', d: '#8C200D' },
-  B: { nombre: 'Fondo', precio: 80, c: '#0A7FC9', t: '#D6EBF9', b: '#8FC6EA', d: '#07507F' },
+  A: { nombre: 'Zona A', precio: 90, c: '#D9381E', t: '#FBE0D9', b: '#EFA898', d: '#8C200D' },
+  B: { nombre: 'Zona B', precio: 80, c: '#0A7FC9', t: '#D6EBF9', b: '#8FC6EA', d: '#07507F' },
   C: { nombre: 'Segundo piso', precio: 70, c: '#0F9150', t: '#D7F0E1', b: '#8DD0AC', d: '#0A5C33' }
 };
 const CANALES = { virtual: 'Venta virtual', fisica: 'Venta física' };
@@ -829,7 +829,7 @@ function montar() {
         <div class="modo" id="modo" role="group" aria-label="Qué hacer al tocar una butaca"><button type="button" data-a="modo" data-v="vender">Vender</button><button type="button" data-a="modo" data-v="bloquear">Bloquear</button></div>
         <button type="button" class="btn mini" id="btnZoom" data-a="zoom"></button>
         <button type="button" class="btn mini" data-a="capturaGeneral">Captura general</button>
-        <span class="ira">Ir a <button type="button" class="sC" data-a="ir" data-v="C">Segundo piso</button><button type="button" class="sB" data-a="ir" data-v="B">Fondo</button><button type="button" class="sA" data-a="ir" data-v="A">Frente</button></span>
+        <span class="ira">Ir a <button type="button" class="sC" data-a="ir" data-v="C">Segundo piso</button><button type="button" class="sB" data-a="ir" data-v="B">Zona B</button><button type="button" class="sA" data-a="ir" data-v="A">Zona A</button></span>
       </div>
       <p class="aviso" id="avisoMapa" hidden></p>
       <div class="mscroll" id="mscroll"><div class="mapa" id="mapa"></div></div>
