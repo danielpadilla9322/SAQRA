@@ -37,6 +37,11 @@ h1,h2,h3{font-family:var(--fc);margin:0;line-height:1.15}
 .cab-marca{display:flex;align-items:center;gap:12px}
 .cab-logo{width:60px;height:60px;flex:none;display:block}
 .cab::after{content:'';display:block;height:6px;background:var(--cinta)}
+.cuenta{background:var(--maiz);color:var(--tinta);text-align:center;font:600 15px/1.2 var(--fc);padding:7px 12px;letter-spacing:.2px}
+.cuenta b{font-weight:700;font-size:17px}
+.cuenta.cerca{background:#C2187A;color:#fff}
+.cuenta.hoy{background:var(--verde);color:#fff}
+.cuenta.paso{background:#51476B;color:#fff}
 .cab h1{font-size:26px;font-weight:700;letter-spacing:.2px}
 .cab .sub{font:700 16px/1.2 var(--fc);letter-spacing:4px;color:var(--maiz);margin-top:2px}
 .cab p{margin:3px 0 0;font-size:14px;color:#CFC8E4}
@@ -326,7 +331,8 @@ const EVENTO = {
   nombre: 'Danzas de Paucartambo',
   subtitulo: 'SAQRA',
   lugar: 'Teatro Municipal del Cusco',
-  fecha: 'viernes 13 de noviembre de 2026'
+  fecha: 'viernes 13 de noviembre de 2026',
+  dia: '2026-11-13'   // fecha de la presentación, para la cuenta regresiva
 };
 const SECTORES = {
   A: { nombre: 'Frente', precio: 90, c: '#D9381E', t: '#FBE0D9', b: '#EFA898', d: '#8C200D' },
@@ -787,9 +793,24 @@ function tandas() {
 /* =====================================================================
    7. INTERFAZ: estructura
    ===================================================================== */
+// Cuenta regresiva a la presentación (por días de calendario, con la fecha de este teléfono)
+let CUENTA_TIMER = null;
+function infoCuenta(ahora) {
+  const [y, m, d] = EVENTO.dia.split('-').map(Number), hoy = new Date(ahora || Date.now());
+  const dias = Math.round((new Date(y, m - 1, d) - new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())) / 86400000);
+  if (dias > 1) return { dias, cls: dias <= 7 ? 'cerca' : '', html: 'Faltan <b>' + dias + ' días</b> para la presentación' };
+  if (dias === 1) return { dias, cls: 'cerca', html: 'Falta <b>1 día</b> para la presentación: es mañana' };
+  if (dias === 0) return { dias, cls: 'hoy', html: '<b>¡Hoy es la presentación!</b>' };
+  return { dias, cls: 'paso', html: 'La presentación fue hace ' + (-dias) + (dias === -1 ? ' día' : ' días') };
+}
+function pintarCuenta() {
+  const el = $('#cuenta'); if (!el) return;
+  const c = infoCuenta(); el.className = 'cuenta' + (c.cls ? ' ' + c.cls : ''); el.innerHTML = c.html;
+}
 function montar() {
   $('#app').innerHTML = `
   <header class="cab">
+    <div class="cuenta" id="cuenta" role="status"></div>
     <div class="cab-in">
       <div class="cab-marca"><img class="cab-logo" src="${LOGO_URI}" alt="Logo de SAQRA"><div><h1>${esc(EVENTO.nombre)}</h1><div class="sub">${esc(EVENTO.subtitulo)}</div><p>${esc(EVENTO.lugar)}, ${esc(EVENTO.fecha)}</p></div></div>
       <div class="cab-der"><span class="chip" id="chipModo"></span><button type="button" class="chip" id="chipUsr" data-a="tab" data-v="gestion"></button></div>
@@ -827,6 +848,8 @@ function montar() {
   $('#q').addEventListener('input', e => { UI.q = e.target.value; pintarVentas(); });
   window.addEventListener('resize', ajustarZoom);
   pintar();
+  pintarCuenta();
+  if (!CUENTA_TIMER) CUENTA_TIMER = setInterval(pintarCuenta, 60000);   // se actualiza sola al cambiar el día
 }
 function construirMapa() {
   let h = '';
@@ -1161,9 +1184,20 @@ async function generarCaptura(sector, modo) {
   const gridY = 300 + (ocup ? 130 : 0) + 24;
   const gridH = blq.filas.reduce((h, f) => h + (f ? STEP : STEP / 2), 0);
   const H = gridY + gridH + (sector === 'A' ? 110 : 70) + (ocup ? 104 : 130);
-  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  // En la captura para ventas, una franja arriba indica cuántos días faltan para la presentación
+  const cuenta = !ocup ? infoCuenta() : null, OFF = cuenta && cuenta.dias >= 0 ? 58 : 0;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H + OFF;
   const g = cv.getContext('2d');
-  g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, H + OFF);
+  if (OFF) {
+    const col = { '': ['#F5B400', '#241A3A'], cerca: ['#C2187A', '#FFFFFF'], hoy: ['#0F9150', '#FFFFFF'] }[cuenta.cls];
+    g.fillStyle = col[0]; g.fillRect(0, 0, W, OFF);
+    const trozos = cuenta.html.split(/<\/?b>/), tam = i => i % 2 ? '700 38px ' + FUENTE : '600 30px ' + FUENTE;
+    let total = 0; trozos.forEach((t, i) => { g.font = tam(i); total += g.measureText(t).width; });
+    let x = (W - total) / 2; g.textAlign = 'left'; g.fillStyle = col[1];
+    trozos.forEach((t, i) => { g.font = tam(i); g.fillText(t, x, 40); x += g.measureText(t).width; });
+    g.translate(0, OFF);
+  }
   // Cabecera
   g.fillStyle = '#241A3A'; g.fillRect(0, 0, W, 150); cintaCanvas(g, W, 150, 8); if (logo) g.drawImage(logo, PAD - 6, 12, 126, 126);
   g.textAlign = 'left'; g.fillStyle = '#F5B400'; g.font = '700 34px ' + FUENTE;
