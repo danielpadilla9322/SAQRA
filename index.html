@@ -1096,6 +1096,8 @@ function pintarResumen(st) {
     <p class="nota">Documentos listos para presentar, con los datos de este momento.</p>
     <div class="doc-op"><div><b>Situación actual</b><span class="nota">Fecha del informe, monto recaudado, número de ventas y mapa de butacas en su estado actual. Para presentar a la jefatura.</span></div><button type="button" class="btn pri" data-a="docSituacion">Generar documento</button></div>
     <div class="doc-op"><div><b>Resumen de ventas</b><span class="nota">Resumen general, relación de ventas y una cartilla por cada venta. Para contabilidad o secretaría.</span></div><button type="button" class="btn pri" data-a="docVentas">Generar documento</button></div>
+    <div class="doc-op"><div><b>Mapa para boletería</b><span class="nota">Un mapa por zona (A, B y Segundo piso) con el número dentro de cada recuadro y un color por grupo. Word horizontal de 3 páginas, para imprimir a color.</span></div><button type="button" class="btn pri" data-a="docMapa">Generar documento</button></div>
+    <div class="doc-op"><div><b>Lista de control para boletería</b><span class="nota">Todas las butacas de cada zona con comprador, DNI, fecha de compra, el mismo color del mapa y una casilla para marcar si se ocupó. Word horizontal para imprimir a color.</span></div><button type="button" class="btn pri" data-a="docLista">Generar documento</button></div>
     <details class="otros"><summary>Copia de datos en CSV (para Excel)</summary><div class="accs"><button type="button" class="btn mini" data-a="exportarButacas">Butacas y ventas</button><button type="button" class="btn mini" data-a="exportarHistorial">Historial</button></div></details>
   </div>`;
 }
@@ -1397,16 +1399,18 @@ function bytesDe(blob) {
   return new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(new Uint8Array(r.result)); r.onerror = () => mal(new Error('no se pudo leer la imagen')); r.readAsArrayBuffer(blob); });
 }
 
-function Word(pie) {
-  const cuerpo = [], media = [];
+function Word(pie, op) {
+  op = op || {};
+  const cuerpo = [], media = []; let dibujos = 0;
   const C = { ink: '241A3A', gris: '51476B', claro: 'F2F1F7', linea: 'DCD8E8' };
-  const run = (t, o = {}) => '<w:r><w:rPr>' + (o.b ? '<w:b/>' : '') + (o.i ? '<w:i/>' : '') + (o.color ? '<w:color w:val="' + o.color + '"/>' : '') + (o.sz ? '<w:sz w:val="' + o.sz + '"/><w:szCs w:val="' + o.sz + '"/>' : '') + '</w:rPr><w:t xml:space="preserve">' + XML(t) + '</w:t></w:r>';
+  const run = (t, o = {}) => '<w:r><w:rPr>' + (o.fuente ? '<w:rFonts w:ascii="' + o.fuente + '" w:hAnsi="' + o.fuente + '" w:cs="' + o.fuente + '"/>' : '') + (o.b ? '<w:b/>' : '') + (o.i ? '<w:i/>' : '') + (o.color ? '<w:color w:val="' + o.color + '"/>' : '') + (o.sz ? '<w:sz w:val="' + o.sz + '"/><w:szCs w:val="' + o.sz + '"/>' : '') + '</w:rPr><w:t xml:space="preserve">' + XML(t) + '</w:t></w:r>';
   const par = (runs, o = {}) => '<w:p><w:pPr>' + (o.estilo ? '<w:pStyle w:val="' + o.estilo + '"/>' : '') + (o.keep ? '<w:keepNext/>' : '') + (o.salto ? '<w:pageBreakBefore/>' : '') +
     (o.borde ? '<w:pBdr><w:bottom w:val="single" w:sz="12" w:space="6" w:color="' + o.borde + '"/></w:pBdr>' : '') +
     '<w:spacing w:before="' + (o.antes || 0) + '" w:after="' + (o.despues == null ? 80 : o.despues) + '"/>' + (o.jc ? '<w:jc w:val="' + o.jc + '"/>' : '') + '</w:pPr>' + (Array.isArray(runs) ? runs.join('') : runs) + '</w:p>';
   const celda = (contenido, ancho, o = {}) => '<w:tc><w:tcPr><w:tcW w:w="' + ancho + '" w:type="dxa"/>' + (o.span ? '<w:gridSpan w:val="' + o.span + '"/>' : '') +
-    (o.fondo ? '<w:shd w:val="clear" w:color="auto" w:fill="' + o.fondo + '"/>' : '') + '<w:vAlign w:val="' + (o.v || 'center') + '"/></w:tcPr>' + contenido + '</w:tc>';
-  const fila = (celdas, o = {}) => '<w:tr><w:trPr><w:cantSplit/>' + (o.cab ? '<w:tblHeader/>' : '') + '</w:trPr>' + celdas.join('') + '</w:tr>';
+    (o.borde ? '<w:tcBorders>' + ['top', 'left', 'bottom', 'right'].map(k => '<w:' + k + ' w:val="single" w:sz="4" w:space="0" w:color="' + o.borde + '"/>').join('') + '</w:tcBorders>' : '') +
+    (o.fondo || o.patron ? '<w:shd w:val="' + (o.patron || 'clear') + '" w:color="' + (o.colorPatron || 'auto') + '" w:fill="' + (o.fondo || 'FFFFFF') + '"/>' : '') + '<w:vAlign w:val="' + (o.v || 'center') + '"/></w:tcPr>' + contenido + '</w:tc>';
+  const fila = (celdas, o = {}) => '<w:tr><w:trPr><w:cantSplit/>' + (o.alto ? '<w:trHeight w:val="' + o.alto + '" w:hRule="' + (o.exacto ? 'exact' : 'atLeast') + '"/>' : '') + (o.cab ? '<w:tblHeader/>' : '') + '</w:trPr>' + celdas.join('') + '</w:tr>';
   const tabla = (anchos, filas, o = {}) => {
     const b = '<w:%s w:val="single" w:sz="' + (o.bsz || 4) + '" w:space="0" w:color="' + (o.borde || C.linea) + '"/>';
     return '<w:tbl><w:tblPr><w:tblW w:w="' + anchos.reduce((a, c) => a + c, 0) + '" w:type="dxa"/><w:tblBorders>' +
@@ -1441,19 +1445,27 @@ function Word(pie) {
       cuerpo.push(par('', { despues: 120 }));
     },
     imagen(bytes, wpx, hpx, maxW, maxH, alt) { cuerpo.push(api.imagenXml(bytes, wpx, hpx, maxW, maxH, alt, 'center')); },
-    imagenXml(bytes, wpx, hpx, maxW, maxH, alt, jc) {
-      const id = media.length + 1; media.push({ n: 'image' + id + '.png', d: bytes });
+    // La misma imagen (por ejemplo el logo) se guarda una sola vez aunque se use en varias páginas
+    imagenRun(bytes, wpx, hpx, maxW, maxH, alt) {
+      let i = media.findIndex(m => m.d === bytes);
+      if (i < 0) { media.push({ n: 'image' + (media.length + 1) + '.png', d: bytes }); i = media.length - 1; }
+      const rid = i + 1, id = ++dibujos;
       let wc = maxW, hc = wc * hpx / wpx; if (hc > maxH) { hc = maxH; wc = hc * wpx / hpx; }
       const cx = Math.round(wc * 360000), cy = Math.round(hc * 360000);
-      return ('<w:p><w:pPr><w:spacing w:before="0" w:after="0"/><w:jc w:val="' + (jc || 'center') + '"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="' + cx + '" cy="' + cy + '"/>' +
+      return '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="' + cx + '" cy="' + cy + '"/>' +
         '<wp:docPr id="' + id + '" name="Imagen ' + id + '" descr="' + XML(alt || '') + '"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>' +
-        '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="' + id + '" name="image' + id + '.png"/><pic:cNvPicPr/></pic:nvPicPr>' +
-        '<pic:blipFill><a:blip r:embed="rIdImg' + id + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
-        '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>');
+        '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="' + id + '" name="image' + rid + '.png"/><pic:cNvPicPr/></pic:nvPicPr>' +
+        '<pic:blipFill><a:blip r:embed="rIdImg' + rid + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+        '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>';
     },
+    imagenXml(bytes, wpx, hpx, maxW, maxH, alt, jc) {
+      return '<w:p><w:pPr><w:spacing w:before="0" w:after="0"/><w:jc w:val="' + (jc || 'center') + '"/></w:pPr>' + api.imagenRun(bytes, wpx, hpx, maxW, maxH, alt) + '</w:p>';
+    },
+    // Párrafo casi sin altura (separa tablas sin gastar espacio de la hoja)
+    espacioMini(h) { cuerpo.push('<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="' + (h || 20) + '" w:lineRule="exact"/><w:rPr><w:sz w:val="2"/><w:szCs w:val="2"/></w:rPr></w:pPr></w:p>'); },
     // Franja de los colores del logo (una fila de celdas de color, sin bordes)
-    cinta() {
-      const cols = ['EC1C0C', 'F0782A', 'F2C500', '8DA82A', '1E9BD0', '3C5FD0', '8B3FA0', 'D61D96'], an = 9638, w1 = Math.floor(an / cols.length), ws = cols.map((c, i) => i === cols.length - 1 ? an - w1 * (cols.length - 1) : w1);
+    cinta(ancho) {
+      const cols = ['EC1C0C', 'F0782A', 'F2C500', '8DA82A', '1E9BD0', '3C5FD0', '8B3FA0', 'D61D96'], an = ancho || 9638, w1 = Math.floor(an / cols.length), ws = cols.map((c, i) => i === cols.length - 1 ? an - w1 * (cols.length - 1) : w1);
       cuerpo.push('<w:tbl><w:tblPr><w:tblW w:w="' + an + '" w:type="dxa"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>' + ws.map(x => '<w:gridCol w:w="' + x + '"/>').join('') + '</w:tblGrid><w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="110" w:hRule="exact"/></w:trPr>' +
         cols.map((c, i) => celda('<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/></w:pPr></w:p>', ws[i], { fondo: c })).join('') + '</w:tr></w:tbl>');
       cuerpo.push(par('', { despues: 0 }));
@@ -1462,10 +1474,17 @@ function Word(pie) {
     tablaSinBordes(anchos, filas) {
       return '<w:tbl><w:tblPr><w:tblW w:w="' + anchos.reduce((a, c) => a + c, 0) + '" w:type="dxa"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="100" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>' + anchos.map(a => '<w:gridCol w:w="' + a + '"/>').join('') + '</w:tblGrid>' + filas.join('') + '</w:tbl>';
     },
+    // Tabla centrada, sin bordes de tabla y con márgenes de celda pequeños (mapas y listas)
+    tablaMapa(anchos, filas, mar) {
+      const m = mar == null ? 20 : mar;
+      return '<w:tbl><w:tblPr><w:tblW w:w="' + anchos.reduce((a, c) => a + c, 0) + '" w:type="dxa"/><w:jc w:val="center"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="' + m + '" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="' + m + '" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>' + anchos.map(a => '<w:gridCol w:w="' + a + '"/>').join('') + '</w:tblGrid>' + filas.join('') + '</w:tbl>';
+    },
     construir(titulo, autor) {
       const enc = new TextEncoder(), H = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
       const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
-      const sect = '<w:sectPr><w:footerReference w:type="default" r:id="rIdFtr"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>';
+      const sect = '<w:sectPr><w:footerReference w:type="default" r:id="rIdFtr"/>' + (op.horizontal
+        ? '<w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="567" w:right="680" w:bottom="680" w:left="680" w:header="283" w:footer="283" w:gutter="0"/>'
+        : '<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/>') + '</w:sectPr>';
       cuerpo.push(par('', { despues: 0 }));
       const documento = H + '<w:document ' + NS + '><w:body>' + cuerpo.join('') + sect + '</w:body></w:document>';
       const rp = '<w:rPr><w:color w:val="857F9B"/><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr>';
@@ -1702,11 +1721,155 @@ function docVentas() {
   }
   return { blob: w.construir('Resumen de ventas: ' + EVENTO.nombre + ' ' + EVENTO.subtitulo, U.nombre), nombre: nombreArchivo('resumen-de-ventas-saqra') };
 }
+/* =====================================================================
+   DOCUMENTOS PARA BOLETERÍA (Word horizontal, A4): mapa por zona y lista de control
+   Un grupo es una venta con 2 o más butacas en la zona: lleva un color y un código (G1, G2…).
+   Los colores se reparten por orden de butacas (fila de adelante hacia atrás, de izquierda a derecha)
+   y nunca se repiten en grupos vecinos. El mapa y la lista usan los mismos colores y códigos.
+   ===================================================================== */
+const PALETA_GRUPOS = ['F8A5A5', '74C0FC', 'FFE066', 'B197FC', 'C0EB75', 'F783AC', '63E6BE', 'FFC078', 'E599F7', '66D9E8', 'D0A97A', 'B2F2BB'];
+const fechaCorta2 = ts => ts ? new Date(ts).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '';
+const recortar = (t, n) => { t = String(t || ''); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
+function datosBoleteria(sector) {
+  const blq = PLANO.find(b => b.sector === sector), ordenFilas = [...FILAS[sector]].reverse();
+  const items = [], pos = {};
+  blq.filas.forEach((f, ri) => {
+    if (!f) return;
+    for (const [col, n0, cant] of f[1]) for (let i = 0; i < cant; i++) {
+      const it = { id: sector + '-' + f[0] + '-' + (n0 + i), fila: f[0], num: n0 + i, ri, col: col + i + blq.off };
+      items.push(it); pos[ri + '|' + it.col] = it;
+    }
+  });
+  const orden = items.slice().sort((a, b) => ordenFilas.indexOf(a.fila) - ordenFilas.indexOf(b.fila) || a.num - b.num);
+  const porVenta = {};
+  for (const it of orden) { const r = S.asientos[it.id]; if (r && r.v) (porVenta[r.v] = porVenta[r.v] || []).push(it); }
+  const grupos = [], gDe = {};
+  for (const it of orden) {
+    const r = S.asientos[it.id];
+    if (r && r.v && porVenta[r.v].length >= 2 && !gDe[r.v]) { gDe[r.v] = { k: grupos.length + 1, codigo: 'G' + (grupos.length + 1), vecinos: new Set(), color: null }; grupos.push(gDe[r.v]); }
+  }
+  const grupoDe = it => { const r = S.asientos[it.id]; return r && r.v ? gDe[r.v] || null : null; };
+  for (const it of items) {
+    const g = grupoDe(it);
+    for (const vec of [pos[it.ri + '|' + (it.col + 1)], pos[(it.ri + 1) + '|' + it.col]]) {
+      const h = vec ? grupoDe(vec) : null;
+      if (g && h && g !== h) { g.vecinos.add(h); h.vecinos.add(g); }
+    }
+  }
+  for (const g of grupos) {
+    const usados = new Set([...g.vecinos].map(x => x.color).filter(Boolean));
+    for (let j = 0; j < PALETA_GRUPOS.length && !g.color; j++) { const c = PALETA_GRUPOS[(g.k - 1 + j) % PALETA_GRUPOS.length]; if (!usados.has(c)) g.color = c; }
+    if (!g.color) g.color = PALETA_GRUPOS[(g.k - 1) % PALETA_GRUPOS.length];
+  }
+  return { blq, items, orden, grupoDe, nGrupos: grupos.length };
+}
+// Cómo se ve una butaca: relleno, patrón y datos de su venta
+function estadoBoleteria(it, d) {
+  const r = S.asientos[it.id];
+  if (!r) return { t: 'libre' };
+  if (r.v) { const v = S.ventas[r.v], g = d.grupoDe(it); return { t: 'vendida', v, g, pend: !!(v && v.pago && v.pago.estado === 'pendiente'), fondo: g ? g.color : 'D9D9D9' }; }
+  return { t: 'bloq', patron: 'thinDiagStripe' };
+}
+const BORDE_BOLETERIA = '8A8A8A';
+function leyendaBoleteria(w) {
+  const an = [420, 1300, 420, 2300, 420, 4400, 420, 2800, 420, 2578];
+  const sw = (o, txt) => w.celda(w.par(txt ? w.run(txt, { b: 1, sz: 18, color: 'C00000' }) : '', { despues: 0, jc: 'center' }), 420, Object.assign({ borde: BORDE_BOLETERIA }, o));
+  const lb = (t, ancho) => w.celda(w.par(w.run('  ' + t, { sz: 17, color: w.C.gris }), { despues: 0 }), ancho);
+  w.add(w.tablaMapa(an, [w.fila([sw({}), lb('Libre', 1300), sw({ fondo: 'D9D9D9' }), lb('Venta individual', 2300), sw({ fondo: PALETA_GRUPOS[1] }), lb('Grupo: mismo color y código (G1, G2…)', 4400),
+    sw({ patron: 'thinDiagStripe', colorPatron: '808080', fondo: 'FFFFFF' }), lb('Bloqueada (venta física)', 2800), sw({}, '12'), lb('Número en rojo: pago pendiente', 2578)], { alto: 300 })], 30));
+  w.espacioMini(100);
+}
+function cabeceraBoleteria(w, titulo, k, extra, salto) {
+  const sc = SECTORES[k];
+  w.add(w.par([w.imagenRun(logoBytes(), LOGO_PX, LOGO_PX, 1.25, 1.25, 'Logo de SAQRA'), w.run('  ' + titulo + '  ·  ' + sc.nombre.toUpperCase(), { b: 1, sz: 38, color: w.C.ink })], { salto, despues: 20 }));
+  w.add(w.par(w.run(EVENTO.nombre + ': ' + EVENTO.subtitulo + '  ·  ' + EVENTO.fecha + '  ·  ' + sol(sc.precio) + ' por entrada' + (extra ? '  ·  ' + extra : '') + '  ·  Generado el ' + fechaLarga(Date.now()) + ' por ' + U.nombre, { sz: 16, color: w.C.gris }), { despues: 40 }));
+  w.cinta(15478);
+  w.espacioMini(80);
+}
+
+// ---------- Documento 1: mapa por zona ----------
+function docMapaBoleteria() {
+  const w = Word(EVENTO.nombre + ': ' + EVENTO.subtitulo + '  ·  Mapa para boletería', { horizontal: true }), ANCHO = 15478;
+  ['A', 'B', 'C'].forEach((k, idx) => {
+    const d = datosBoleteria(k), blq = d.blq;
+    cabeceraBoleteria(w, 'MAPA DE BUTACAS', k, d.nGrupos ? plural(d.nGrupos, 'grupo', 'grupos') : '', idx > 0);
+    leyendaBoleteria(w);
+    let cMin = 99, cMax = 0;
+    blq.filas.forEach(f => f && f[1].forEach(([col, , cant]) => { cMin = Math.min(cMin, col + blq.off); cMax = Math.max(cMax, col + cant - 1 + blq.off); }));
+    const ncol = cMax - cMin + 1, LAB = 450, anc = Math.floor((ANCHO - 2 * LAB) / ncol), anchos = [LAB, ...Array(ncol).fill(anc), LAB], total = anchos.reduce((a, c) => a + c, 0);
+    const nfilas = blq.filas.filter(Boolean).length, nhuecos = blq.filas.filter(f => !f).length, alto = Math.min(620, Math.floor((10659 - 2000) / (nfilas + nhuecos * 0.4)));
+    const lab = t => w.celda(w.par(w.run(t, { b: 1, sz: 20, color: w.C.gris }), { despues: 0, jc: 'center' }), LAB);
+    const filas = blq.filas.map(f => {
+      if (!f) return w.fila([w.celda(w.par('', { despues: 0 }), total, { span: ncol + 2 })], { alto: Math.round(alto * 0.4), exacto: true });
+      const porCol = {};
+      for (const [col, n0, cant] of f[1]) for (let i = 0; i < cant; i++) porCol[col + i + blq.off - cMin] = n0 + i;
+      const celdas = [lab(f[0])];
+      for (let c = 0; c < ncol; c++) {
+        const num = porCol[c];
+        if (num == null) { celdas.push(w.celda(w.par('', { despues: 0 }), anc)); continue; }
+        const it = d.items.find(x => x.fila === f[0] && x.num === num), e = estadoBoleteria(it, d);
+        const contenido = w.par(w.run(String(num), { b: 1, sz: 22, color: e.pend ? 'C00000' : '000000' }), { despues: 0, jc: 'center' }) +
+          (e.g ? w.par(w.run(e.g.codigo, { b: 1, sz: 12, color: '333333' }), { despues: 0, jc: 'center' }) : '');
+        celdas.push(w.celda(contenido, anc, { borde: BORDE_BOLETERIA, fondo: e.fondo, patron: e.patron, colorPatron: e.patron ? '808080' : null }));
+      }
+      celdas.push(lab(f[0]));
+      return w.fila(celdas, { alto, exacto: true });
+    });
+    w.add(w.tablaMapa(anchos, filas));
+    w.espacioMini(80);
+    if (k === 'A') w.add(w.tablaMapa([LAB, anc * ncol, LAB], [w.fila([w.celda(w.par('', { despues: 0 }), LAB), w.celda(w.par(w.run('ESCENARIO', { b: 1, sz: 24, color: 'FFFFFF' }), { despues: 0, jc: 'center' }), anc * ncol, { fondo: w.C.ink }), w.celda(w.par('', { despues: 0 }), LAB)], { alto: 380, exacto: true })]));
+    else w.add(w.par(w.run('↓  HACIA EL ESCENARIO  ↓', { b: 1, sz: 20, color: '857F9B' }), { despues: 0, jc: 'center' }));
+    w.espacioMini(20);
+  });
+  return { blob: w.construir('Mapa para boletería: ' + EVENTO.nombre + ' ' + EVENTO.subtitulo, U.nombre), nombre: nombreArchivo('mapa-boleteria-saqra') };
+}
+
+// ---------- Documento 2: lista de control por zona ----------
+function docListaBoleteria() {
+  const w = Word(EVENTO.nombre + ': ' + EVENTO.subtitulo + '  ·  Lista de control para boletería', { horizontal: true });
+  const mitad = [580, 650, 2300, 900, 800, 1571, 818], anchos = [...mitad, 240, ...mitad], R = 24, POR = 2 * R, st = estadisticas().sec;
+  const celdaT = (t, i, o = {}) => w.celda(w.par(t, { despues: 0, jc: o.jc }), mitad[i], Object.assign({ borde: BORDE_BOLETERIA }, o));
+  const cab = () => { const c = ['Grupo', 'Butaca', 'Comprador', 'DNI', 'Compra', 'Obs.', 'Ocupó']; const h = i => celdaT(w.run(c[i], { b: 1, sz: 15, color: 'FFFFFF' }), i, { fondo: w.C.ink, jc: i === 2 || i === 5 ? null : 'center' }); return w.fila([...c.map((_, i) => h(i)), w.celda(w.par('', { despues: 0 }), 240), ...c.map((_, i) => h(i))], { cab: true, alto: 300 }); };
+  const vacias = () => mitad.map((a, i) => w.celda(w.par('', { despues: 0 }), a));
+  let primera = true;
+  for (const k of ['A', 'B', 'C']) {
+    const d = datosBoleteria(k), s = st[k], seats = d.orden, paginas = Math.ceil(seats.length / POR);
+    const celdasDe = it => {
+      const e = estadoBoleteria(it, d), v = e.v, c = (v && v.comprador) || {}, rell = { fondo: e.fondo, patron: e.patron, colorPatron: e.patron ? '808080' : null };
+      const nombre = e.t === 'vendida' ? String(c.nombre || '') : '';
+      // Una sola línea por fila (alto fijo): así ninguna fila crece y la hoja no se desborda
+      const obs = [];
+      if (e.pend) obs.push(w.run(v && v.nota ? 'Pend. · ' : 'Pago pendiente', { b: 1, sz: 13, color: 'C00000' }));
+      if (v && v.nota) obs.push(w.run(v && e.pend ? recortar(v.nota, 11) : 'Nota: ' + recortar(v.nota, 14), { sz: 13, i: true, color: '7D0E4E' }));
+      return [
+        celdaT(e.g ? w.run(e.g.codigo, { b: 1, sz: 14 }) : '', 0, Object.assign({ jc: 'center' }, rell)),
+        celdaT(w.run(it.fila + '-' + it.num, { b: 1, sz: 18 }), 1, Object.assign({ jc: 'center' }, rell)),
+        celdaT(e.t === 'bloq' ? w.run('Bloqueada · venta física', { i: true, sz: 14, color: '857F9B' }) : nombre ? w.run(recortar(nombre, 30), { sz: nombre.length > 22 ? 13 : 16 }) : '', 2),
+        celdaT(e.t === 'vendida' ? w.run(c.doc || '', { sz: 16 }) : '', 3, { jc: 'center' }),
+        celdaT(e.t === 'vendida' ? w.run(fechaCorta2(v && v.creado), { sz: 16 }) : '', 4, { jc: 'center' }),
+        w.celda(w.par(obs.join(''), { despues: 0 }), mitad[5], { borde: BORDE_BOLETERIA }),
+        celdaT(w.run('\u2610', { sz: 26, fuente: 'Segoe UI Symbol' }), 6, { jc: 'center' })
+      ];
+    };
+    for (let pg = 0; pg < paginas; pg++) {
+      const trozo = seats.slice(pg * POR, (pg + 1) * POR), izq = trozo.slice(0, R), der = trozo.slice(R);
+      cabeceraBoleteria(w, 'LISTA DE CONTROL', k, 'hoja ' + (pg + 1) + ' de ' + paginas + (pg === 0 ? '  ·  ' + (s.vendidas + s.reservadas) + ' vendidas, ' + s.libres + ' libres, ' + s.cupoLibre + ' bloqueadas' : ''), !primera);
+      primera = false;
+      if (pg === 0) leyendaBoleteria(w);
+      const filas = [cab()];
+      izq.forEach((it, i) => filas.push(w.fila([...celdasDe(it), w.celda(w.par('', { despues: 0 }), 240), ...(der[i] ? celdasDe(der[i]) : vacias())], { alto: 285, exacto: true })));
+      w.add(w.tablaMapa(anchos, filas, 50));
+      w.espacioMini(20);
+    }
+  }
+  return { blob: w.construir('Lista de control para boletería: ' + EVENTO.nombre + ' ' + EVENTO.subtitulo, U.nombre), nombre: nombreArchivo('lista-control-boleteria-saqra') };
+}
 async function crearInforme(b, cual) {
   const txt = b.textContent; b.disabled = true; b.textContent = 'Generando…';
   try {
-    const r = cual === 'situacion' ? await docSituacion() : docVentas();
-    abrir({ tipo: 'archivo', titulo: cual === 'situacion' ? 'Situación actual' : 'Resumen de ventas', url: URL.createObjectURL(r.blob), blob: r.blob, nombre: r.nombre });
+    const defs = { situacion: [docSituacion, 'Situación actual'], ventas: [docVentas, 'Resumen de ventas'], mapa: [docMapaBoleteria, 'Mapa para boletería'], lista: [docListaBoleteria, 'Lista de control para boletería'] };
+    const r = await defs[cual][0]();
+    abrir({ tipo: 'archivo', titulo: defs[cual][1], url: URL.createObjectURL(r.blob), blob: r.blob, nombre: r.nombre });
   } catch (e) { toast('No se pudo generar el documento: ' + (e.message || e), 'error'); }
   finally { if (b.isConnected) { b.disabled = false; b.textContent = txt; } }
 }
@@ -2021,6 +2184,8 @@ const A = {
   },
   async docSituacion(b) { await crearInforme(b, 'situacion'); },
   async docVentas(b) { await crearInforme(b, 'ventas'); },
+  async docMapa(b) { await crearInforme(b, 'mapa'); },
+  async docLista(b) { await crearInforme(b, 'lista'); },
   descargarArchivo() {
     const m = UI.modal; if (!m || !m.url) return;
     const a = document.createElement('a'); a.href = m.url; a.download = m.nombre; document.body.appendChild(a); a.click(); a.remove();
